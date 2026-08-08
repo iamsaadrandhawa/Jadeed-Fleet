@@ -4,20 +4,6 @@
   "installCommand": "npm install",
   "framework": "vite",
   "regions": ["iad1"],
-  "functions": {
-    "api/*.js": {
-      "maxDuration": 30
-    }
-  },
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "buildCommand": "npm run build"
-      }
-    }
-  ],
   "env": {
     "VITE_SUPABASE_URL": "@supabase_url",
     "VITE_SUPABASE_ANON_KEY": "@supabase_anon_key"
