@@ -52,6 +52,7 @@ export interface Driver {
   assigned_vehicle?: Vehicle | null;
 }
 
+// types.ts
 export interface Vehicle {
   id: string;
   make: string;
@@ -63,11 +64,15 @@ export interface Vehicle {
   insurance_policy_number: string | null;
   insurance_expiry: string | null;
   status: string;
-  assigned_driver_id: string | null;
   department: string | null;
   created_at: string;
   updated_at: string;
-  assigned_driver?: Driver | null;
+  assigned_driver_id: string | null;
+  // Add this for the relation
+  assigned_driver?: {
+    id: string;
+    full_name: string;
+  } | null;
 }
 
 export interface AuditLog {

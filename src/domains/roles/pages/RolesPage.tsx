@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, ShieldCheck } from "lucide-react";
+import { Plus, Pencil, Trash2, ShieldCheck, ChevronRight } from "lucide-react";
 import { supabase } from "@/shared/lib/supabaseClient";
 import { useAuthStore } from "@/shared/store/authStore";
 import { isSuperAdmin } from "@/shared/lib/permissions";
@@ -145,75 +145,172 @@ export function RolesPage() {
         ) : roles.length === 0 ? (
           <EmptyState icon={<ShieldCheck size={24} />} title="No roles found" />
         ) : (
-          <div className="hidden overflow-x-auto md:block">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">
-                  <th className="px-4 py-3">Role</th>
-                  <th className="px-4 py-3">Description</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                {roles.map((r) => (
-                  <tr key={r.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800 dark:bg-neutral-800">
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-neutral-900 dark:text-neutral-100">{r.name}</p>
-                      {r.is_system && <span className="text-xs text-neutral-400 dark:text-neutral-500">System</span>}
-                    </td>
-                    <td className="px-4 py-3 text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">{r.description ?? "—"}</td>
-                    <td className="px-4 py-3">
-                      <Badge tone={r.status === "active" ? "success" : "neutral"} dot>{r.status}</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-1">
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">
+                    <th className="px-4 py-3">Role</th>
+                    <th className="px-4 py-3">Description</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Permissions</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                  {roles.map((r) => {
+                    const permCount = r.permissions 
+                      ? Object.values(r.permissions).reduce(
+                          (total, domain) => total + Object.values(domain).filter(Boolean).length,
+                          0
+                        )
+                      : 0;
+                    
+                    return (
+                      <tr key={r.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800 dark:bg-neutral-800">
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-neutral-900 dark:text-neutral-100">{r.name}</p>
+                          {r.is_system && <span className="text-xs text-neutral-400 dark:text-neutral-500">System</span>}
+                        </td>
+                        <td className="px-4 py-3 text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">
+                          {r.description ?? "—"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge tone={r.status === "active" ? "success" : "neutral"} dot>
+                            {r.status}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge tone="neutral">{permCount} permissions</Badge>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-1">
+                            {canUpdate && (
+                              <button 
+                                onClick={() => openEdit(r)} 
+                                className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 dark:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100 dark:text-neutral-100"
+                              >
+                                <Pencil size={16} />
+                              </button>
+                            )}
+                            {canDelete && !r.is_system && r.name !== "Super Admin" && (
+                              <button 
+                                onClick={() => handleDelete(r)} 
+                                className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-red-50 dark:hover:bg-red-950/50 hover:text-red-600 dark:hover:text-red-400 dark:text-red-400"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="divide-y divide-neutral-100 dark:divide-neutral-800 md:hidden">
+              {roles.map((r) => {
+                const permCount = r.permissions 
+                  ? Object.values(r.permissions).reduce(
+                      (total, domain) => total + Object.values(domain).filter(Boolean).length,
+                      0
+                    )
+                  : 0;
+                
+                return (
+                  <div key={r.id} className="px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-neutral-900 dark:text-neutral-100">{r.name}</p>
+                          {r.is_system && (
+                            <Badge tone="neutral" className="text-xs">System</Badge>
+                          )}
+                        </div>
+                        {r.description && (
+                          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                            {r.description}
+                          </p>
+                        )}
+                      </div>
+                      <Badge tone={r.status === "active" ? "success" : "neutral"} dot>
+                        {r.status}
+                      </Badge>
+                    </div>
+                    
+                    <div className="mt-3 flex items-center justify-between">
+                      <Badge tone="neutral" className="text-xs">
+                        {permCount} permissions
+                      </Badge>
+                      <div className="flex gap-1">
                         {canUpdate && (
-                          <button onClick={() => openEdit(r)} className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 dark:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100 dark:text-neutral-100">
+                          <button 
+                            onClick={() => openEdit(r)} 
+                            className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100"
+                          >
                             <Pencil size={16} />
                           </button>
                         )}
                         {canDelete && !r.is_system && r.name !== "Super Admin" && (
-                          <button onClick={() => handleDelete(r)} className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-red-50 dark:hover:bg-red-950/50 hover:text-red-600 dark:hover:text-red-400 dark:text-red-400">
+                          <button 
+                            onClick={() => handleDelete(r)} 
+                            className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-red-50 dark:hover:bg-red-950/50 hover:text-red-600 dark:hover:text-red-400"
+                          >
                             <Trash2 size={16} />
                           </button>
                         )}
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editingRole ? "Edit Role" : "Add Role"} size="lg">
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input label="Role Name" required value={name} onChange={(e) => setName(e.target.value)} disabled={editingRole?.is_system} />
+            <Input 
+              label="Role Name" 
+              required 
+              value={name} 
+              onChange={(e) => setName(e.target.value)} 
+              disabled={editingRole?.is_system} 
+            />
             <Select label="Status" value="active" disabled>
               <option value="active">Active</option>
             </Select>
           </div>
-          <Input label="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <Input 
+            label="Description" 
+            value={description} 
+            onChange={(e) => setDescription(e.target.value)} 
+          />
 
           <div>
             <p className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">Permission Matrix</p>
-            <div className="overflow-hidden rounded-md border border-neutral-200 dark:border-neutral-800">
+            <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">
-                    <th className="px-3 py-2">Module</th>
+                    <th className="px-3 py-2 min-w-[80px]">Module</th>
                     {CRUD_ACTIONS.map((a) => (
-                      <th key={a} className="px-3 py-2 text-center capitalize">{a}</th>
+                      <th key={a} className="px-3 py-2 text-center min-w-[50px] capitalize">{a}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                   {DOMAINS.map((domain) => (
                     <tr key={domain} className="hover:bg-neutral-50 dark:hover:bg-neutral-800 dark:bg-neutral-800">
-                      <td className="px-3 py-2 font-medium text-neutral-900 dark:text-neutral-100">{DOMAIN_LABELS[domain]}</td>
+                      <td className="px-3 py-2 font-medium text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
+                        {DOMAIN_LABELS[domain]}
+                      </td>
                       {CRUD_ACTIONS.map((action) => (
                         <td key={action} className="px-3 py-2 text-center">
                           <input
@@ -233,8 +330,12 @@ export function RolesPage() {
 
           {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save Role"}</Button>
+            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? "Saving…" : "Save Role"}
+            </Button>
           </div>
         </form>
       </Modal>

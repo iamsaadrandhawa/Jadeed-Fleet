@@ -68,7 +68,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     const { data, error } = await supabase
       .from("profiles")
-      .select("*, roles(*)")
+      .select("*, role:roles(*)")
       .eq("id", uid)
       .maybeSingle();
     if (error) {

@@ -59,7 +59,7 @@ Deno.serve(async (req: Request) => {
       if (!can("users", "read")) return json({ error: "Forbidden" }, 403);
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, phone, status, role_id, created_at, roles(id, name)")
+        .select("id, full_name, phone, status, role_id, created_at, role:roles(id, name)")
         .order("created_at", { ascending: false });
       if (error) return json({ error: error.message }, 500);
 

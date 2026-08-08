@@ -1,5 +1,5 @@
-import { useEffect, useState, memo } from "react";
-import { Search, Trash2, ScrollText } from "lucide-react";
+import { useEffect, useState, memo, useCallback } from "react";
+import { Search, Trash2, ScrollText, CheckSquare, Square, Trash } from "lucide-react";
 import { supabase } from "@/shared/lib/supabaseClient";
 import { useAuthStore } from "@/shared/store/authStore";
 import { can } from "@/shared/lib/permissions";
@@ -22,17 +22,33 @@ const ACTION_TONES: Record<string, "success" | "info" | "danger" | "neutral"> = 
   delete: "danger",
 };
 
+interface LogRowProps {
+  log: AuditLog;
+  canDelete: boolean;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
+  onDelete: (log: AuditLog) => void;
+}
+
 const LogRow = memo(function LogRow({
   log,
   canDelete,
+  isSelected,
+  onSelect,
   onDelete,
-}: {
-  log: AuditLog;
-  canDelete: boolean;
-  onDelete: (log: AuditLog) => void;
-}) {
+}: LogRowProps) {
   return (
-    <tr key={log.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800 dark:bg-neutral-800">
+    <tr className="hover:bg-neutral-50 dark:hover:bg-neutral-800 dark:bg-neutral-800">
+      <td className="px-4 py-3">
+        {canDelete && (
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onSelect(log.id)}
+            className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-700 text-red-600 focus:ring-red-500 dark:bg-neutral-800"
+          />
+        )}
+      </td>
       <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">{log.user_email ?? "—"}</td>
       <td className="px-4 py-3">
         <Badge tone={ACTION_TONES[log.action] ?? "neutral"}>{log.action}</Badge>
@@ -42,12 +58,64 @@ const LogRow = memo(function LogRow({
       <td className="px-4 py-3 text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">{formatDateTime(log.created_at)}</td>
       {canDelete && (
         <td className="px-4 py-3 text-right">
-          <button onClick={() => onDelete(log)} className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-red-50 dark:hover:bg-red-950/50 hover:text-red-600 dark:hover:text-red-400 dark:text-red-400">
+          <button
+            onClick={() => onDelete(log)}
+            className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-red-50 dark:hover:bg-red-950/50 hover:text-red-600 dark:hover:text-red-400 dark:text-red-400"
+          >
             <Trash2 size={16} />
           </button>
         </td>
       )}
     </tr>
+  );
+});
+
+// Mobile Card View
+const LogCard = memo(function LogCard({
+  log,
+  canDelete,
+  isSelected,
+  onSelect,
+  onDelete,
+}: LogRowProps) {
+  return (
+    <div className="flex items-start gap-3 border-b border-neutral-100 px-4 py-3 dark:border-neutral-800">
+      {canDelete && (
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={() => onSelect(log.id)}
+          className="mt-1 h-4 w-4 rounded border-neutral-300 dark:border-neutral-700 text-red-600 focus:ring-red-500 dark:bg-neutral-800"
+        />
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+            {log.user_email ?? "System"}
+          </p>
+          <Badge tone={ACTION_TONES[log.action] ?? "neutral"}>{log.action}</Badge>
+        </div>
+        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+          <span className="font-medium capitalize">{log.entity}</span>
+          {log.description && (
+            <span className="text-neutral-500 dark:text-neutral-500">
+              {" "}— {log.description}
+            </span>
+          )}
+        </p>
+        <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
+          {formatDateTime(log.created_at)}
+        </p>
+        {canDelete && (
+          <button
+            onClick={() => onDelete(log)}
+            className="mt-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50"
+          >
+            <Trash2 size={12} /> Delete
+          </button>
+        )}
+      </div>
+    </div>
   );
 });
 
@@ -62,6 +130,8 @@ export function AuditLogsPage() {
   const [entityFilter, setEntityFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
 
   const debouncedSearch = useDebouncedValue(search);
   const debouncedDateFrom = useDebouncedValue(dateFrom);
@@ -71,6 +141,7 @@ export function AuditLogsPage() {
 
   useEffect(() => {
     setPage(1);
+    setSelectedIds(new Set()); // Clear selection when filters change
   }, [debouncedSearch, actionFilter, entityFilter, debouncedDateFrom, debouncedDateTo]);
 
   useEffect(() => {
@@ -104,12 +175,68 @@ export function AuditLogsPage() {
     load();
   }, [page, debouncedSearch, actionFilter, entityFilter, debouncedDateFrom, debouncedDateTo]);
 
-  const handleDelete = async (log: AuditLog) => {
-    if (!confirm("Delete this log entry? This cannot be undone.")) return;
+  const handleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (selectedIds.size === logs.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(logs.map((log) => log.id)));
+    }
+  }, [logs, selectedIds]);
+
+  const handleDeleteSingle = async (log: AuditLog) => {
+    if (!confirm(`Delete this log entry? This cannot be undone.`)) return;
+    
     const { error: delErr } = await supabase.from("audit_logs").delete().eq("id", log.id);
     if (!delErr) {
       setLogs((prev) => prev.filter((l) => l.id !== log.id));
       setTotal((t) => t - 1);
+      setSelectedIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(log.id);
+        return newSet;
+      });
+      await logAction("delete", "log", log.id, `Deleted log entry ${log.id}`);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    
+    const confirmMessage = `Delete ${selectedIds.size} selected log entries? This cannot be undone.`;
+    if (!confirm(confirmMessage)) return;
+
+    setDeleting(true);
+    try {
+      const idsToDelete = Array.from(selectedIds);
+      const { error: delErr } = await supabase
+        .from("audit_logs")
+        .delete()
+        .in("id", idsToDelete);
+
+      if (!delErr) {
+        setLogs((prev) => prev.filter((l) => !selectedIds.has(l.id)));
+        setTotal((t) => t - idsToDelete.length);
+        setSelectedIds(new Set());
+        await logAction("delete", "logs", "bulk", `Deleted ${idsToDelete.length} log entries`);
+      } else {
+        console.error("Error deleting logs:", delErr);
+      }
+    } catch (error) {
+      console.error("Error deleting logs:", error);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -117,7 +244,23 @@ export function AuditLogsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Audit Logs" description={`${total} logged action${total === 1 ? "" : "s"}`} />
+      <PageHeader
+        title="Audit Logs"
+        description={`${total} logged action${total === 1 ? "" : "s"}`}
+        actions={
+          canDelete && selectedIds.size > 0 ? (
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={handleDeleteSelected}
+              disabled={deleting}
+            >
+              <Trash size={16} />
+              {deleting ? "Deleting..." : `Delete Selected (${selectedIds.size})`}
+            </Button>
+          ) : null
+        }
+      />
 
       <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
         <div className="flex flex-col gap-3 border-b border-neutral-200 dark:border-neutral-800 p-4 lg:flex-row lg:items-center">
@@ -157,10 +300,40 @@ export function AuditLogsPage() {
           <EmptyState icon={<ScrollText size={24} />} title="No log entries found" description="Try adjusting your filters." />
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* Selection info bar */}
+            {canDelete && selectedIds.size > 0 && (
+              <div className="flex items-center justify-between bg-blue-50 px-4 py-2 dark:bg-blue-950/30">
+                <span className="text-sm text-blue-700 dark:text-blue-400">
+                  {selectedIds.size} log{selectedIds.size === 1 ? "" : "s"} selected
+                </span>
+                <button
+                  onClick={() => setSelectedIds(new Set())}
+                  className="text-sm text-blue-700 hover:underline dark:text-blue-400"
+                >
+                  Clear selection
+                </button>
+              </div>
+            )}
+
+            {/* Desktop Table View */}
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">
+                    <th className="px-4 py-3">
+                      {canDelete && (
+                        <button
+                          onClick={handleSelectAll}
+                          className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+                        >
+                          {selectedIds.size === logs.length && logs.length > 0 ? (
+                            <CheckSquare size={16} />
+                          ) : (
+                            <Square size={16} />
+                          )}
+                        </button>
+                      )}
+                    </th>
                     <th className="px-4 py-3">User</th>
                     <th className="px-4 py-3">Action</th>
                     <th className="px-4 py-3">Entity</th>
@@ -171,11 +344,33 @@ export function AuditLogsPage() {
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                   {logs.map((log) => (
-                    <LogRow key={log.id} log={log} canDelete={canDelete} onDelete={handleDelete} />
+                    <LogRow
+                      key={log.id}
+                      log={log}
+                      canDelete={canDelete}
+                      isSelected={selectedIds.has(log.id)}
+                      onSelect={handleSelect}
+                      onDelete={handleDeleteSingle}
+                    />
                   ))}
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile Card View */}
+            <div className="divide-y divide-neutral-100 dark:divide-neutral-800 md:hidden">
+              {logs.map((log) => (
+                <LogCard
+                  key={log.id}
+                  log={log}
+                  canDelete={canDelete}
+                  isSelected={selectedIds.has(log.id)}
+                  onSelect={handleSelect}
+                  onDelete={handleDeleteSingle}
+                />
+              ))}
+            </div>
+
             <Pagination
               page={page}
               totalPages={totalPages}
