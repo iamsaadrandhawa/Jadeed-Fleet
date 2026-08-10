@@ -27,39 +27,38 @@ const DriverDesktopRow = memo(function DriverDesktopRow({ d }: { d: DriverRow })
   const isExpired = licenseDays !== null && licenseDays < 0;
 
   return (
-    <tr className="hover:bg-neutral-50 dark:hover:bg-neutral-800 dark:bg-neutral-800">
-      <td className="px-4 py-3">
+    <tr className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors duration-150">
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
         <Link
           to={`/UI/drivers/${d.id}`}
-          className="font-medium text-neutral-900 dark:text-neutral-100 hover:underline"
+          className="font-medium text-neutral-900 dark:text-neutral-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
-          {d.employee_id}
+          {d.employee_id || "—"}
         </Link>
-
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
         {d.full_name ? (
-          <span className="flex items-center gap-1 text-neutral-700 dark:text-neutral-300">
-            <IdCard size={12} className="text-neutral-400 dark:text-neutral-500" />
+          <span className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300">
+            <IdCard size={14} className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
             {d.full_name}
           </span>
         ) : (
           <span className="text-neutral-400 dark:text-neutral-500">—</span>
         )}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
         {d.location ? (
-          <span className="flex items-center gap-1 text-neutral-700 dark:text-neutral-300">
-            <MapPin size={12} className="text-neutral-400 dark:text-neutral-500" />
+          <span className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300">
+            <MapPin size={14} className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
             {d.location}
           </span>
         ) : (
           <span className="text-neutral-400 dark:text-neutral-500">—</span>
         )}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
         {d.license_number ? (
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-0.5">
             <span className="text-neutral-700 dark:text-neutral-300">{d.license_number}</span>
             {d.license_class && (
               <span className="text-xs text-neutral-400 dark:text-neutral-500">Class: {d.license_class}</span>
@@ -69,24 +68,24 @@ const DriverDesktopRow = memo(function DriverDesktopRow({ d }: { d: DriverRow })
           <span className="text-neutral-400 dark:text-neutral-500">—</span>
         )}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
         {d.license_expiry ? (
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-1">
             <span className="text-neutral-700 dark:text-neutral-300">
               {formatDate(d.license_expiry)}
             </span>
             {isExpiring && (
-              <Badge tone="warning" className="mt-1 text-xs">
+              <Badge tone="warning" className="mt-0.5 text-xs w-fit">
                 {licenseDays} days left
               </Badge>
             )}
             {isExpired && (
-              <Badge tone="danger" className="mt-1 text-xs">
+              <Badge tone="danger" className="mt-0.5 text-xs w-fit">
                 Expired
               </Badge>
             )}
             {!isExpiring && !isExpired && licenseDays !== null && (
-              <Badge tone="success" className="mt-1 text-xs">
+              <Badge tone="success" className="mt-0.5 text-xs w-fit">
                 {licenseDays} days left
               </Badge>
             )}
@@ -95,32 +94,32 @@ const DriverDesktopRow = memo(function DriverDesktopRow({ d }: { d: DriverRow })
           <span className="text-neutral-400 dark:text-neutral-500">—</span>
         )}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
         {d.assigned_vehicle ? (
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-0.5">
             <span className="text-neutral-700 dark:text-neutral-300">
               {d.assigned_vehicle.make} {d.assigned_vehicle.model}
             </span>
             <Link
               to={`/UI/vehicles/${d.assigned_vehicle.id}`}
-              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              className="text-xs text-blue-600 dark:text-blue-400 hover:underline transition-colors"
             >
-              View Vehicle
+              View Vehicle →
             </Link>
           </div>
         ) : (
           <span className="text-neutral-400 dark:text-neutral-500">—</span>
         )}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
         <Badge tone={statusTone(d.status)} dot>
           {d.status}
         </Badge>
       </td>
-      <td className="px-4 py-3 text-right">
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800 text-right">
         <Link
           to={`/UI/drivers/${d.id}`}
-          className="text-neutral-400 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+          className="text-neutral-400 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700"
         >
           <ChevronRight size={18} />
         </Link>
@@ -138,25 +137,34 @@ const DriverMobileCard = memo(function DriverMobileCard({ d }: { d: DriverRow })
     <Link
       key={d.id}
       to={`/UI/drivers/${d.id}`}
-      className="block px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+      className="block px-4 py-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors duration-150 border-b border-neutral-100 dark:border-neutral-800 last:border-b-0"
     >
-
-      <div className="mt-2 space-y-1 text-sm">
-        {d.employee_id && (
-          <p className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-            <IdCard size={14} className="text-neutral-400 dark:text-neutral-500" />
-            <span>{d.employee_id}</span>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-neutral-900 dark:text-neutral-100 truncate">
+            {d.full_name || "—"}
           </p>
-        )}
+          {d.employee_id && (
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+              ID: {d.employee_id}
+            </p>
+          )}
+        </div>
+        <Badge tone={statusTone(d.status)} dot className="flex-shrink-0">
+          {d.status}
+        </Badge>
+      </div>
+
+      <div className="mt-3 space-y-2 text-sm">
         {d.location && (
           <p className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-            <MapPin size={14} className="text-neutral-400 dark:text-neutral-500" />
-            <span>{d.location}</span>
+            <MapPin size={14} className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
+            <span className="truncate">{d.location}</span>
           </p>
         )}
         {d.license_number && (
           <p className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-            <Hash size={14} className="text-neutral-400 dark:text-neutral-500" />
+            <Hash size={14} className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
             <span>License: {d.license_number}</span>
             {d.license_class && (
               <span className="text-xs text-neutral-400 dark:text-neutral-500">
@@ -167,16 +175,16 @@ const DriverMobileCard = memo(function DriverMobileCard({ d }: { d: DriverRow })
         )}
         {d.license_expiry && (
           <p className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-            <Calendar size={14} className="text-neutral-400 dark:text-neutral-500" />
-            <span>
+            <Calendar size={14} className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
+            <span className="flex items-center gap-2 flex-wrap">
               Expires: {formatDate(d.license_expiry)}
               {isExpiring && (
-                <Badge tone="warning" className="ml-2 text-xs">
+                <Badge tone="warning" className="text-xs">
                   {licenseDays}d left
                 </Badge>
               )}
               {isExpired && (
-                <Badge tone="danger" className="ml-2 text-xs">
+                <Badge tone="danger" className="text-xs">
                   Expired
                 </Badge>
               )}
@@ -185,9 +193,9 @@ const DriverMobileCard = memo(function DriverMobileCard({ d }: { d: DriverRow })
         )}
         {d.assigned_vehicle && (
           <p className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-            <Car size={14} className="text-neutral-400 dark:text-neutral-500" />
-            <span>
-              Vehicle: {d.assigned_vehicle.make} {d.assigned_vehicle.model}
+            <Car size={14} className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
+            <span className="truncate">
+              {d.assigned_vehicle.make} {d.assigned_vehicle.model}
             </span>
           </p>
         )}
@@ -356,12 +364,14 @@ export function DriverListPage() {
         }
       />
 
-      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm">
         {/* Filter bar with search on the right */}
-        <div className="flex flex-col gap-3 border-b border-neutral-200 dark:border-neutral-800 p-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-800/50 p-4 sm:flex-row sm:items-center">
           {/* Status filter on the left */}
           <div className="sm:w-48">
             <Select
+              id="status-filter"
+              name="status-filter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full"
@@ -384,11 +394,13 @@ export function DriverListPage() {
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500"
               />
               <input
+                id="driver-search"
+                name="driver-search"
                 type="text"
                 placeholder="Search by name, employee ID, or location..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-10 w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 pl-9 pr-3 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500"
+                className="h-10 w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 pl-9 pr-3 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500 transition-colors"
               />
             </div>
 
@@ -434,15 +446,15 @@ export function DriverListPage() {
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-                    <th className="px-4 py-3">Employee ID</th>
-                    <th className="px-4 py-3">Name</th>
-                    <th className="px-4 py-3">Location</th>
-                    <th className="px-4 py-3">License</th>
-                    <th className="px-4 py-3">License Expiry</th>
-                    <th className="px-4 py-3">Assigned Vehicle</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3" />
+                  <tr className="border-b-2 border-neutral-200 dark:border-neutral-700 bg-neutral-50/80 dark:bg-neutral-800/50 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                    <th className="px-4 py-3.5">Employee ID</th>
+                    <th className="px-4 py-3.5">Name</th>
+                    <th className="px-4 py-3.5">Location</th>
+                    <th className="px-4 py-3.5">License</th>
+                    <th className="px-4 py-3.5">License Expiry</th>
+                    <th className="px-4 py-3.5">Assigned Vehicle</th>
+                    <th className="px-4 py-3.5">Status</th>
+                    <th className="px-4 py-3.5 w-12" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -462,7 +474,7 @@ export function DriverListPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="border-t border-neutral-200 dark:border-neutral-800 px-4 py-3">
+              <div className="border-t-2 border-neutral-200 dark:border-neutral-700 bg-neutral-50/80 dark:bg-neutral-800/50 px-4 py-3.5">
                 <Pagination
                   page={page}
                   totalPages={totalPages}

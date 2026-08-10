@@ -22,42 +22,42 @@ const VehicleDesktopRow = memo(function VehicleDesktopRow({ vehicle }: { vehicle
   const isInsuranceExpiring = insuranceDays !== null && insuranceDays <= 30 && insuranceDays >= 0;
 
   return (
-    <tr className="hover:bg-neutral-50 dark:hover:bg-neutral-800 dark:bg-neutral-800">
-      <td className="px-4 py-3">
+    <tr className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors duration-150">
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
         <Link 
           to={`/UI/vehicles/${vehicle.id}`} 
-          className="font-medium text-neutral-900 dark:text-neutral-100 hover:underline"
+          className="font-medium text-neutral-900 dark:text-neutral-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           {vehicle.make} {vehicle.model}
         </Link>
         {vehicle.year && (
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
             {vehicle.year}
           </p>
         )}
       </td>
-      <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300">
         {vehicle.registration_number ?? "—"}
       </td>
-      <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300">
         {vehicle.vin ?? "—"}
       </td>
-      <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300">
         {vehicle.assigned_driver ? vehicle.assigned_driver.full_name : "—"}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
         {vehicle.insurance_expiry ? (
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-1">
             <span className="text-neutral-700 dark:text-neutral-300">
               {formatDate(vehicle.insurance_expiry)}
             </span>
             {isInsuranceExpiring && (
-              <Badge tone="warning" className="mt-1 text-xs">
+              <Badge tone="warning" className="mt-0.5 text-xs w-fit">
                 {insuranceDays} days left
               </Badge>
             )}
             {insuranceDays !== null && insuranceDays < 0 && (
-              <Badge tone="danger" className="mt-1 text-xs">
+              <Badge tone="danger" className="mt-0.5 text-xs w-fit">
                 Expired
               </Badge>
             )}
@@ -66,15 +66,15 @@ const VehicleDesktopRow = memo(function VehicleDesktopRow({ vehicle }: { vehicle
           <span className="text-neutral-400 dark:text-neutral-500">—</span>
         )}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
         <Badge tone={statusTone(vehicle.status)} dot>
           {vehicle.status}
         </Badge>
       </td>
-      <td className="px-4 py-3 text-right">
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800 text-right">
         <Link 
           to={`/UI/vehicles/${vehicle.id}`} 
-          className="text-neutral-400 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+          className="text-neutral-400 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700"
         >
           <ChevronRight size={18} />
         </Link>
@@ -91,49 +91,49 @@ const VehicleMobileCard = memo(function VehicleMobileCard({ vehicle }: { vehicle
     <Link 
       key={vehicle.id} 
       to={`/UI/vehicles/${vehicle.id}`} 
-      className="block px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800 dark:bg-neutral-800"
+      className="block px-4 py-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors duration-150 border-b border-neutral-100 dark:border-neutral-800 last:border-b-0"
     >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="font-medium text-neutral-900 dark:text-neutral-100">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-neutral-900 dark:text-neutral-100 truncate">
             {vehicle.make} {vehicle.model}
           </p>
           {vehicle.year && (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
               {vehicle.year}
             </p>
           )}
         </div>
-        <Badge tone={statusTone(vehicle.status)} dot>
+        <Badge tone={statusTone(vehicle.status)} dot className="flex-shrink-0">
           {vehicle.status}
         </Badge>
       </div>
       
-      <div className="mt-2 space-y-1 text-sm">
+      <div className="mt-3 space-y-2 text-sm">
         {vehicle.registration_number && (
           <p className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-            <Hash size={14} className="text-neutral-400 dark:text-neutral-500" />
-            <span>{vehicle.registration_number}</span>
+            <Hash size={14} className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
+            <span className="truncate">{vehicle.registration_number}</span>
           </p>
         )}
         {vehicle.assigned_driver && (
           <p className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-            <User size={14} className="text-neutral-400 dark:text-neutral-500" />
-            <span>Driver: {vehicle.assigned_driver.full_name}</span>
+            <User size={14} className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
+            <span className="truncate">Driver: {vehicle.assigned_driver.full_name}</span>
           </p>
         )}
         {vehicle.insurance_expiry && (
           <p className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-            <Calendar size={14} className="text-neutral-400 dark:text-neutral-500" />
-            <span>
+            <Calendar size={14} className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
+            <span className="flex items-center gap-2 flex-wrap">
               Insurance: {formatDate(vehicle.insurance_expiry)}
               {isInsuranceExpiring && (
-                <Badge tone="warning" className="ml-2 text-xs">
+                <Badge tone="warning" className="text-xs">
                   {insuranceDays}d left
                 </Badge>
               )}
               {insuranceDays !== null && insuranceDays < 0 && (
-                <Badge tone="danger" className="ml-2 text-xs">
+                <Badge tone="danger" className="text-xs">
                   Expired
                 </Badge>
               )}
@@ -142,8 +142,8 @@ const VehicleMobileCard = memo(function VehicleMobileCard({ vehicle }: { vehicle
         )}
         {vehicle.vin && (
           <p className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-            <Hash size={14} className="text-neutral-400 dark:text-neutral-500" />
-            <span className="text-xs">VIN: {vehicle.vin}</span>
+            <Hash size={14} className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
+            <span className="text-xs truncate">VIN: {vehicle.vin}</span>
           </p>
         )}
       </div>
@@ -303,15 +303,18 @@ export function VehicleListPage() {
         }
       />
 
-      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        {/* Filter bar with search on the right - MATCHING DRIVER LIST STYLE */}
-        <div className="flex flex-col gap-3 border-b border-neutral-200 dark:border-neutral-800 p-4 sm:flex-row sm:items-center">
+      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm">
+        {/* Filter bar with search on the right */}
+        <div className="flex flex-col gap-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-800/50 p-4 sm:flex-row sm:items-center">
           {/* Status filter on the left */}
           <div className="sm:w-48">
             <Select
+              id="vehicle-status-filter"
+              name="vehicle-status-filter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full"
+              autoComplete="off"
             >
               <option value="">All statuses</option>
               <option value="active">Active</option>
@@ -323,7 +326,7 @@ export function VehicleListPage() {
           {/* Spacer to push search to the right */}
           <div className="flex-1" />
           
-          {/* Search and refresh on the right - ENHANCED SEARCH */}
+          {/* Search and refresh on the right */}
           <div className="flex items-center gap-2 sm:w-auto w-full">
             <div className="relative flex-1 sm:min-w-[260px]">
               <Search 
@@ -331,11 +334,14 @@ export function VehicleListPage() {
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" 
               />
               <input
+                id="vehicle-search"
+                name="vehicle-search"
                 type="text"
                 placeholder="Search by make, model, registration, or VIN..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-10 w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 pl-9 pr-3 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500"
+                className="h-10 w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 pl-9 pr-3 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500 transition-colors"
+                autoComplete="off"
               />
             </div>
             
@@ -381,14 +387,14 @@ export function VehicleListPage() {
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-                    <th className="px-4 py-3">Vehicle</th>
-                    <th className="px-4 py-3">Registration</th>
-                    <th className="px-4 py-3">VIN</th>
-                    <th className="px-4 py-3">Assigned Driver</th>
-                    <th className="px-4 py-3">Insurance Expiry</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3" />
+                  <tr className="border-b-2 border-neutral-200 dark:border-neutral-700 bg-neutral-50/80 dark:bg-neutral-800/50 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                    <th className="px-4 py-3.5">Vehicle</th>
+                    <th className="px-4 py-3.5">Registration</th>
+                    <th className="px-4 py-3.5">VIN</th>
+                    <th className="px-4 py-3.5">Assigned Driver</th>
+                    <th className="px-4 py-3.5">Insurance Expiry</th>
+                    <th className="px-4 py-3.5">Status</th>
+                    <th className="px-4 py-3.5 w-12" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -408,7 +414,7 @@ export function VehicleListPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="border-t border-neutral-200 dark:border-neutral-800 px-4 py-3">
+              <div className="border-t-2 border-neutral-200 dark:border-neutral-700 bg-neutral-50/80 dark:bg-neutral-800/50 px-4 py-3.5">
                 <Pagination
                   page={page}
                   totalPages={totalPages}

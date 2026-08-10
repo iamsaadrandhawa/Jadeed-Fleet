@@ -149,7 +149,7 @@ export function VehicleDetailPage() {
         console.log("🔄 Fetching assigned driver:", vehicleData.assigned_driver_id);
         const { data: driverData, error: driverError } = await supabase
           .from("drivers")
-          .select("id, full_name, phone, status, assigned_vehicle_id")   // ← "email" here
+          .select("id, full_name, phone, status, assigned_vehicle_id")
           .eq("id", vehicleData.assigned_driver_id)
           .single();
 
@@ -576,68 +576,101 @@ export function VehicleDetailPage() {
             <form onSubmit={handleSave} className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Input
+                  id="edit_make"
+                  name="make"
                   label="Make"
                   required
                   value={form.make ?? ""}
                   onChange={(e) => setForm({ ...form, make: e.target.value })}
+                  autoComplete="off"
                 />
                 <Input
+                  id="edit_model"
+                  name="model"
                   label="Model"
                   required
                   value={form.model ?? ""}
                   onChange={(e) => setForm({ ...form, model: e.target.value })}
+                  autoComplete="off"
                 />
                 <Input
+                  id="edit_year"
+                  name="year"
                   label="Year"
                   type="number"
                   value={form.year ?? ""}
                   onChange={(e) => setForm({ ...form, year: parseInt(e.target.value) || null })}
+                  autoComplete="off"
                 />
                 <Input
+                  id="edit_vin"
+                  name="vin"
                   label="VIN"
                   value={form.vin ?? ""}
                   onChange={(e) => setForm({ ...form, vin: e.target.value })}
+                  autoComplete="off"
                 />
                 <Input
+                  id="edit_registration_number"
+                  name="registration_number"
                   label="Registration Number"
                   value={form.registration_number ?? ""}
                   onChange={(e) => setForm({ ...form, registration_number: e.target.value })}
+                  autoComplete="off"
                 />
                 <Input
+                  id="edit_department"
+                  name="department"
                   label="Department"
                   value={form.department ?? ""}
                   onChange={(e) => setForm({ ...form, department: e.target.value })}
+                  autoComplete="organization"
                 />
                 <Input
+                  id="edit_insurance_provider"
+                  name="insurance_provider"
                   label="Insurance Provider"
                   value={form.insurance_provider ?? ""}
                   onChange={(e) => setForm({ ...form, insurance_provider: e.target.value })}
+                  autoComplete="off"
                 />
                 <Input
+                  id="edit_insurance_policy_number"
+                  name="insurance_policy_number"
                   label="Insurance Policy Number"
                   value={form.insurance_policy_number ?? ""}
                   onChange={(e) => setForm({ ...form, insurance_policy_number: e.target.value })}
+                  autoComplete="off"
                 />
                 <Input
+                  id="edit_insurance_expiry"
+                  name="insurance_expiry"
                   label="Insurance Expiry"
                   type="date"
                   value={form.insurance_expiry ?? ""}
                   onChange={(e) => setForm({ ...form, insurance_expiry: e.target.value })}
+                  autoComplete="off"
                 />
                 <Select
+                  id="edit_status"
+                  name="status"
                   label="Status"
                   value={form.status ?? "active"}
                   onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  autoComplete="off"
                 >
                   <option value="active">Active</option>
                   <option value="maintenance">In Maintenance</option>
                   <option value="inactive">Inactive</option>
                 </Select>
                 <Select
+                  id="edit_assigned_driver"
+                  name="assigned_driver_id"
                   label="Assigned Driver"
                   value={form.assigned_driver_id ?? ""}
                   onChange={(e) => setForm({ ...form, assigned_driver_id: e.target.value || null })}
                   className="sm:col-span-2"
+                  autoComplete="off"
                 >
                   <option value="">Unassigned</option>
                   {drivers.map((d) => (
@@ -769,9 +802,12 @@ export function VehicleDetailPage() {
           {canUpdate && (
             <div className="mt-3 space-y-2">
               <Select
+                id="vehicle-document-category"
+                name="vehicle-document-category"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full"
+                autoComplete="off"
               >
                 {DOCUMENT_CATEGORIES.map((cat) => (
                   <option key={cat.value} value={cat.value}>
@@ -784,6 +820,8 @@ export function VehicleDetailPage() {
                 <Upload size={16} />
                 {uploading ? "Uploading…" : `Upload ${DOCUMENT_CATEGORIES.find(c => c.value === selectedCategory)?.label}`}
                 <input
+                  id="vehicle-document-upload"
+                  name="vehicle-document-upload"
                   type="file"
                   className="hidden"
                   onChange={handleUpload}

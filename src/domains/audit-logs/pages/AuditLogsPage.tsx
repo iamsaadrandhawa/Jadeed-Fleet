@@ -38,29 +38,42 @@ const LogRow = memo(function LogRow({
   onDelete,
 }: LogRowProps) {
   return (
-    <tr className="hover:bg-neutral-50 dark:hover:bg-neutral-800 dark:bg-neutral-800">
-      <td className="px-4 py-3">
+    <tr className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors duration-150">
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
         {canDelete && (
           <input
             type="checkbox"
             checked={isSelected}
             onChange={() => onSelect(log.id)}
-            className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-700 text-red-600 focus:ring-red-500 dark:bg-neutral-800"
+            className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-700 text-red-600 focus:ring-2 focus:ring-red-500 focus:ring-offset-1 dark:bg-neutral-800 transition-colors"
           />
         )}
       </td>
-      <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">{log.user_email ?? "—"}</td>
-      <td className="px-4 py-3">
-        <Badge tone={ACTION_TONES[log.action] ?? "neutral"}>{log.action}</Badge>
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300">
+        <span className="font-medium">{log.user_email ?? "—"}</span>
       </td>
-      <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300 capitalize">{log.entity}</td>
-      <td className="px-4 py-3 text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">{log.description ?? "—"}</td>
-      <td className="px-4 py-3 text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">{formatDateTime(log.created_at)}</td>
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
+        <Badge tone={ACTION_TONES[log.action] ?? "neutral"} className="capitalize">
+          {log.action}
+        </Badge>
+      </td>
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
+        <Badge tone="neutral" className="capitalize">
+          {log.entity}
+        </Badge>
+      </td>
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 max-w-xs truncate">
+        {log.description ?? "—"}
+      </td>
+      <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 whitespace-nowrap text-xs">
+        {formatDateTime(log.created_at)}
+      </td>
       {canDelete && (
-        <td className="px-4 py-3 text-right">
+        <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800 text-right">
           <button
             onClick={() => onDelete(log)}
-            className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-red-50 dark:hover:bg-red-950/50 hover:text-red-600 dark:hover:text-red-400 dark:text-red-400"
+            className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+            title="Delete log entry"
           >
             <Trash2 size={16} />
           </button>
@@ -79,37 +92,41 @@ const LogCard = memo(function LogCard({
   onDelete,
 }: LogRowProps) {
   return (
-    <div className="flex items-start gap-3 border-b border-neutral-100 px-4 py-3 dark:border-neutral-800">
+    <div className="flex items-start gap-3 px-4 py-4 border-b border-neutral-100 dark:border-neutral-800 last:border-b-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors duration-150">
       {canDelete && (
         <input
           type="checkbox"
           checked={isSelected}
           onChange={() => onSelect(log.id)}
-          className="mt-1 h-4 w-4 rounded border-neutral-300 dark:border-neutral-700 text-red-600 focus:ring-red-500 dark:bg-neutral-800"
+          className="mt-1 h-4 w-4 rounded border-neutral-300 dark:border-neutral-700 text-red-600 focus:ring-2 focus:ring-red-500 focus:ring-offset-1 dark:bg-neutral-800 transition-colors"
         />
       )}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
             {log.user_email ?? "System"}
           </p>
-          <Badge tone={ACTION_TONES[log.action] ?? "neutral"}>{log.action}</Badge>
+          <Badge tone={ACTION_TONES[log.action] ?? "neutral"} className="capitalize flex-shrink-0">
+            {log.action}
+          </Badge>
         </div>
-        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-          <span className="font-medium capitalize">{log.entity}</span>
+        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          <Badge tone="neutral" className="capitalize text-xs">
+            {log.entity}
+          </Badge>
           {log.description && (
-            <span className="text-neutral-500 dark:text-neutral-500">
-              {" "}— {log.description}
+            <span className="text-sm text-neutral-500 dark:text-neutral-400 truncate">
+              {log.description}
             </span>
           )}
-        </p>
-        <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
+        </div>
+        <p className="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500">
           {formatDateTime(log.created_at)}
         </p>
         {canDelete && (
           <button
             onClick={() => onDelete(log)}
-            className="mt-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50"
+            className="mt-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30 transition-colors"
           >
             <Trash2 size={12} /> Delete
           </button>
@@ -141,7 +158,7 @@ export function AuditLogsPage() {
 
   useEffect(() => {
     setPage(1);
-    setSelectedIds(new Set()); // Clear selection when filters change
+    setSelectedIds(new Set());
   }, [debouncedSearch, actionFilter, entityFilter, debouncedDateFrom, debouncedDateTo]);
 
   useEffect(() => {
@@ -262,34 +279,75 @@ export function AuditLogsPage() {
         }
       />
 
-      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        <div className="flex flex-col gap-3 border-b border-neutral-200 dark:border-neutral-800 p-4 lg:flex-row lg:items-center">
-          <div className="relative flex-1">
+      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm">
+        {/* Filter bar */}
+        <div className="flex flex-col gap-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-800/50 p-4 lg:flex-row lg:items-center">
+          <div className="relative flex-1 min-w-[200px]">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
             <input
+              id="log-search"
+              name="log-search"
               type="text"
               placeholder="Search by user or description…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-10 w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 pl-9 pr-3 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 dark:text-neutral-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500"
+              className="h-10 w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 pl-9 pr-3 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500 transition-colors"
+              autoComplete="off"
             />
           </div>
-          <Select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} className="lg:w-32">
-            <option value="">All actions</option>
-            <option value="create">Create</option>
-            <option value="update">Update</option>
-            <option value="delete">Delete</option>
-          </Select>
-          <Select value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)} className="lg:w-32">
-            <option value="">All entities</option>
-            <option value="driver">Driver</option>
-            <option value="vehicle">Vehicle</option>
-            <option value="user">User</option>
-            <option value="role">Role</option>
-            <option value="setting">Setting</option>
-          </Select>
-          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="lg:w-36" />
-          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="lg:w-36" />
+          
+          <div className="flex flex-wrap gap-2 lg:flex-nowrap">
+            <Select 
+              id="log-action-filter"
+              name="action"
+              value={actionFilter} 
+              onChange={(e) => setActionFilter(e.target.value)} 
+              className="w-full lg:w-32"
+              autoComplete="off"
+            >
+              <option value="">All actions</option>
+              <option value="create">Create</option>
+              <option value="update">Update</option>
+              <option value="delete">Delete</option>
+            </Select>
+            
+            <Select 
+              id="log-entity-filter"
+              name="entity"
+              value={entityFilter} 
+              onChange={(e) => setEntityFilter(e.target.value)} 
+              className="w-full lg:w-32"
+              autoComplete="off"
+            >
+              <option value="">All entities</option>
+              <option value="driver">Driver</option>
+              <option value="vehicle">Vehicle</option>
+              <option value="user">User</option>
+              <option value="role">Role</option>
+              <option value="setting">Setting</option>
+            </Select>
+          </div>
+          
+          <div className="flex gap-2">
+            <Input 
+              id="log-date-from"
+              name="date_from"
+              type="date" 
+              value={dateFrom} 
+              onChange={(e) => setDateFrom(e.target.value)} 
+              className="w-full lg:w-36"
+              autoComplete="off"
+            />
+            <Input 
+              id="log-date-to"
+              name="date_to"
+              type="date" 
+              value={dateTo} 
+              onChange={(e) => setDateTo(e.target.value)} 
+              className="w-full lg:w-36"
+              autoComplete="off"
+            />
+          </div>
         </div>
 
         {loading ? (
@@ -302,13 +360,13 @@ export function AuditLogsPage() {
           <>
             {/* Selection info bar */}
             {canDelete && selectedIds.size > 0 && (
-              <div className="flex items-center justify-between bg-blue-50 px-4 py-2 dark:bg-blue-950/30">
-                <span className="text-sm text-blue-700 dark:text-blue-400">
+              <div className="flex items-center justify-between border-b border-blue-200 dark:border-blue-800 bg-blue-50/80 dark:bg-blue-950/30 px-4 py-2.5">
+                <span className="text-sm text-blue-700 dark:text-blue-400 font-medium">
                   {selectedIds.size} log{selectedIds.size === 1 ? "" : "s"} selected
                 </span>
                 <button
                   onClick={() => setSelectedIds(new Set())}
-                  className="text-sm text-blue-700 hover:underline dark:text-blue-400"
+                  className="text-sm text-blue-700 hover:underline dark:text-blue-400 transition-colors"
                 >
                   Clear selection
                 </button>
@@ -319,12 +377,13 @@ export function AuditLogsPage() {
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">
-                    <th className="px-4 py-3">
+                  <tr className="border-b-2 border-neutral-200 dark:border-neutral-700 bg-neutral-50/80 dark:bg-neutral-800/50 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                    <th className="px-4 py-3.5 w-10">
                       {canDelete && (
                         <button
                           onClick={handleSelectAll}
-                          className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+                          className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors"
+                          title={selectedIds.size === logs.length && logs.length > 0 ? "Deselect all" : "Select all"}
                         >
                           {selectedIds.size === logs.length && logs.length > 0 ? (
                             <CheckSquare size={16} />
@@ -334,12 +393,12 @@ export function AuditLogsPage() {
                         </button>
                       )}
                     </th>
-                    <th className="px-4 py-3">User</th>
-                    <th className="px-4 py-3">Action</th>
-                    <th className="px-4 py-3">Entity</th>
-                    <th className="px-4 py-3">Description</th>
-                    <th className="px-4 py-3">Timestamp</th>
-                    {canDelete && <th className="px-4 py-3" />}
+                    <th className="px-4 py-3.5">User</th>
+                    <th className="px-4 py-3.5">Action</th>
+                    <th className="px-4 py-3.5">Entity</th>
+                    <th className="px-4 py-3.5">Description</th>
+                    <th className="px-4 py-3.5">Timestamp</th>
+                    {canDelete && <th className="px-4 py-3.5 w-12" />}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -371,13 +430,16 @@ export function AuditLogsPage() {
               ))}
             </div>
 
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              total={total}
-              pageSize={PAGE_SIZE}
-              onPageChange={setPage}
-            />
+            {/* Pagination */}
+            <div className="border-t-2 border-neutral-200 dark:border-neutral-700 bg-neutral-50/80 dark:bg-neutral-800/50 px-4 py-3.5">
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                total={total}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+              />
+            </div>
           </>
         )}
       </div>

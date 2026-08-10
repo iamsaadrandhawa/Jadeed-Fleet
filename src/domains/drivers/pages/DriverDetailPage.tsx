@@ -159,16 +159,38 @@ export function DriverDetailPage() {
         return;
       }
 
-      // Load vehicles for dropdown
+      // Load vehicles - ONLY show unassigned vehicles + the vehicle currently assigned to this driver
       const { data: vehiclesData, error: vehiclesError } = await supabase
         .from("vehicles")
-        .select("id, make, model, registration_number, status, year")
+        .select(`
+          id,
+          make,
+          model,
+          registration_number,
+          status,
+          year,
+          assigned_driver_id
+        `)
         .order("make", { ascending: true });
 
       if (vehiclesError) {
         console.error("Error loading vehicles:", vehiclesError);
+        setVehicles([]);
       } else {
-        setVehicles((vehiclesData ?? []) as Vehicle[]);
+        // Filter: Show vehicles that are:
+        // 1. Unassigned (assigned_driver_id IS NULL) OR
+        // 2. Already assigned to this driver (assigned_driver_id === this driver's id)
+        const currentDriverId = driverData?.id;
+        const filteredVehicles = (vehiclesData ?? []).filter((v) => {
+          // If vehicle is unassigned, show it
+          if (!v.assigned_driver_id) return true;
+          // If vehicle is assigned to this driver, show it
+          if (v.assigned_driver_id === currentDriverId) return true;
+          // Otherwise, hide it (assigned to another driver)
+          return false;
+        });
+        
+        setVehicles(filteredVehicles as Vehicle[]);
       }
 
       // Load documents
@@ -224,7 +246,6 @@ export function DriverDetailPage() {
     const file = e.target.files?.[0];
     if (!file || !id) return;
     
-    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       setError("File size must be less than 10MB");
       return;
@@ -233,7 +254,6 @@ export function DriverDetailPage() {
     setUploading(true);
     setError(null);
     
-    // Initialize progress
     setUploadProgress({
       fileName: file.name,
       progress: 0,
@@ -241,14 +261,12 @@ export function DriverDetailPage() {
     });
 
     try {
-      // Create a unique filename with category prefix
       const timestamp = Date.now();
       const ext = file.name.split('.').pop();
       const baseName = file.name.replace(/\.[^.]+$/, '');
       const fileName = `${selectedCategory}_${timestamp}_${baseName}.${ext}`;
       const filePath = `${id}/${fileName}`;
 
-      // Simulate progress for better UX
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => {
           if (!prev) return null;
@@ -270,10 +288,8 @@ export function DriverDetailPage() {
         setUploadProgress(prev => prev ? { ...prev, status: 'error', error: uploadErr.message } : null);
         setError(`Upload failed: ${uploadErr.message}`);
       } else {
-        // Complete the progress
         setUploadProgress(prev => prev ? { ...prev, progress: 100, status: 'completed' } : null);
         
-        // Add document to list
         const newDoc: DriverDocument = {
           name: fileName,
           path: filePath,
@@ -287,7 +303,6 @@ export function DriverDetailPage() {
         await logAction("update", "driver", id, `Uploaded document ${fileName} (${selectedCategory})`);
         setSuccess(`Document "${file.name}" uploaded successfully as ${selectedCategory}`);
         
-        // Clear progress after delay
         setTimeout(() => {
           setUploadProgress(null);
         }, 2000);
@@ -298,7 +313,6 @@ export function DriverDetailPage() {
       setError("Failed to upload document");
     } finally {
       setUploading(false);
-      // Reset file input
       e.target.value = '';
     }
   };
@@ -352,6 +366,46 @@ export function DriverDetailPage() {
     setSuccess(null);
 
     try {
+      const oldVehicleId = driver.assigned_vehicle_id;
+      const newVehicleId = form.assigned_vehicle_id;
+
+      // If vehicle assignment changed
+      if (oldVehicleId !== newVehicleId) {
+        // 1. Clear old vehicle's assigned_driver_id
+        if (oldVehicleId) {
+          await supabase
+            .from("vehicles")
+            .update({ assigned_driver_id: null })
+            .eq("id", oldVehicleId);
+        }
+
+        // 2. Set new vehicle's assigned_driver_id
+        if (newVehicleId) {
+          // First, check if vehicle is already assigned to another driver
+          const { data: existingDriver } = await supabase
+            .from("drivers")
+            .select("id, full_name")
+            .eq("assigned_vehicle_id", newVehicleId)
+            .neq("id", id)
+            .maybeSingle();
+
+          // If vehicle is assigned to another driver, unassign them first
+          if (existingDriver) {
+            await supabase
+              .from("drivers")
+              .update({ assigned_vehicle_id: null })
+              .eq("id", existingDriver.id);
+          }
+
+          // Assign vehicle to this driver
+          await supabase
+            .from("vehicles")
+            .update({ assigned_driver_id: id })
+            .eq("id", newVehicleId);
+        }
+      }
+
+      // Update the driver record
       const { error: updateErr } = await supabase
         .from("drivers")
         .update({
@@ -378,25 +432,6 @@ export function DriverDetailPage() {
         return;
       }
 
-      // Handle vehicle assignment changes
-      const oldVehicleId = driver.assigned_vehicle_id;
-      const newVehicleId = form.assigned_vehicle_id;
-
-      if (oldVehicleId !== newVehicleId) {
-        if (oldVehicleId) {
-          await supabase
-            .from("vehicles")
-            .update({ assigned_driver_id: null })
-            .eq("id", oldVehicleId);
-        }
-        if (newVehicleId) {
-          await supabase
-            .from("vehicles")
-            .update({ assigned_driver_id: id })
-            .eq("id", newVehicleId);
-        }
-      }
-
       await logAction("update", "driver", id, `Updated driver ${form.full_name}`);
       
       await loadDriverData();
@@ -418,7 +453,6 @@ export function DriverDetailPage() {
     if (!confirm(`Delete driver "${driver.full_name}"? This cannot be undone.`)) return;
 
     try {
-      // Delete all documents first
       if (documents.length > 0) {
         const paths = documents.map(d => d.path);
         await supabase.storage
@@ -426,7 +460,6 @@ export function DriverDetailPage() {
           .remove(paths);
       }
 
-      // Clear vehicle assignment
       if (driver.assigned_vehicle_id) {
         await supabase
           .from("vehicles")
@@ -448,7 +481,6 @@ export function DriverDetailPage() {
     }
   };
 
-  // Get documents by category
   const getDocumentsByCategory = (category: string) => {
     return documents.filter(doc => doc.category === category);
   };
@@ -479,7 +511,6 @@ export function DriverDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Back button */}
       <Link 
         to="/UI/drivers" 
         className="inline-flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
@@ -487,7 +518,6 @@ export function DriverDetailPage() {
         <ArrowLeft size={16} /> Back to drivers
       </Link>
 
-      {/* Success/Error messages */}
       {success && (
         <div className="rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4 text-sm text-green-800 dark:text-green-200 animate-in fade-in slide-in-from-top-2 duration-300">
           {success}
@@ -503,7 +533,7 @@ export function DriverDetailPage() {
         title={driver.full_name}
         description={
           <span className="flex items-center gap-2">
-          <Badge tone={statusTone(driver.status)} dot>
+            <Badge tone={statusTone(driver.status)} dot>
               {driver.status}
             </Badge>
             {driver.license_number && (
@@ -540,47 +570,58 @@ export function DriverDetailPage() {
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Main driver details */}
         <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 lg:col-span-2">
           {editing ? (
             <form onSubmit={handleSave} className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {/* Personal Information */}
                 <Input 
+                  id="edit_full_name"
+                  name="full_name"
                   label="Full Name" 
                   required
                   value={form.full_name ?? ""} 
-                  onChange={(e) => setForm({ ...form, full_name: e.target.value })} 
+                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                  autoComplete="name"
                 />
-              
                 <Input 
+                  id="edit_phone"
+                  name="phone"
                   label="Phone" 
                   value={form.phone ?? ""} 
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })} 
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  autoComplete="tel"
                 />
                 <Input 
+                  id="edit_cnic"
+                  name="cnic"
                   label="CNIC" 
                   value={form.cnic ?? ""} 
                   onChange={(e) => setForm({ ...form, cnic: e.target.value })} 
                   placeholder="XXXXX-XXXXXXX-X"
+                  autoComplete="off"
                 />
                 <Input 
+                  id="edit_address"
+                  name="address"
                   label="Address" 
                   value={form.address ?? ""} 
                   onChange={(e) => setForm({ ...form, address: e.target.value })} 
                   className="sm:col-span-2"
+                  autoComplete="address-line1"
                 />
 
-                {/* Site / Location */}
                 <div className="sm:col-span-2">
                   <Input
+                    id="edit_location"
+                    name="location"
                     label="Site / Location"
                     value={form.location ?? ""}
                     onChange={(e) => setForm({ ...form, location: e.target.value })}
                     placeholder="e.g. Head Office, Lahore Site, Karachi Warehouse"
-                    list="location-suggestions"
+                    list="edit-location-suggestions"
+                    autoComplete="off"
                   />
-                  <datalist id="location-suggestions">
+                  <datalist id="edit-location-suggestions">
                     {locationSuggestions.map((loc) => (
                       <option key={loc} value={loc} />
                     ))}
@@ -592,73 +633,107 @@ export function DriverDetailPage() {
                   )}
                 </div>
                 
-                {/* Emergency Contact */}
                 <Input 
+                  id="edit_emergency_contact_name"
+                  name="emergency_contact_name"
                   label="Emergency Contact Name" 
                   value={form.emergency_contact_name ?? ""} 
-                  onChange={(e) => setForm({ ...form, emergency_contact_name: e.target.value })} 
+                  onChange={(e) => setForm({ ...form, emergency_contact_name: e.target.value })}
+                  autoComplete="off"
                 />
                 <Input 
+                  id="edit_emergency_contact_phone"
+                  name="emergency_contact_phone"
                   label="Emergency Contact Phone" 
                   value={form.emergency_contact_phone ?? ""} 
-                  onChange={(e) => setForm({ ...form, emergency_contact_phone: e.target.value })} 
+                  onChange={(e) => setForm({ ...form, emergency_contact_phone: e.target.value })}
+                  autoComplete="off"
                 />
 
-                {/* License Information */}
                 <Input 
+                  id="edit_license_number"
+                  name="license_number"
                   label="License Number" 
                   value={form.license_number ?? ""} 
-                  onChange={(e) => setForm({ ...form, license_number: e.target.value })} 
+                  onChange={(e) => setForm({ ...form, license_number: e.target.value })}
+                  autoComplete="off"
                 />
                 <Input 
+                  id="edit_license_class"
+                  name="license_class"
                   label="License Class" 
                   value={form.license_class ?? ""} 
                   onChange={(e) => setForm({ ...form, license_class: e.target.value })} 
                   placeholder="e.g., LTV, HTV, PSV"
+                  autoComplete="off"
                 />
                 <Input 
+                  id="edit_license_expiry"
+                  name="license_expiry"
                   label="License Expiry" 
                   type="date" 
                   value={form.license_expiry ?? ""} 
-                  onChange={(e) => setForm({ ...form, license_expiry: e.target.value })} 
+                  onChange={(e) => setForm({ ...form, license_expiry: e.target.value })}
+                  autoComplete="off"
                 />
                 <Input 
+                  id="edit_years_experience"
+                  name="years_experience"
                   label="Years of Experience" 
                   type="number" 
                   value={form.years_experience ?? 0} 
-                  onChange={(e) => setForm({ ...form, years_experience: parseInt(e.target.value) || 0 })} 
+                  onChange={(e) => setForm({ ...form, years_experience: parseInt(e.target.value) || 0 })}
+                  autoComplete="off"
                 />
                 
-                {/* Status & Assignment */}
                 <Select 
+                  id="edit_status"
+                  name="status"
                   label="Status" 
                   value={form.status ?? "active"} 
                   onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  autoComplete="off"
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                   <option value="suspended">Suspended</option>
                 </Select>
-                <Select 
-                  label="Assigned Vehicle" 
-                  value={form.assigned_vehicle_id ?? ""} 
-                  onChange={(e) => setForm({ ...form, assigned_vehicle_id: e.target.value || null })}
-                  className="sm:col-span-2"
-                >
-                  <option value="">Unassigned</option>
-                  {vehicles.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.make} {v.model} ({v.registration_number || 'No reg'}) {v.status !== 'active' ? `[${v.status}]` : ''}
-                    </option>
-                  ))}
-                </Select>
                 
-                {/* Notes */}
+                {vehicles.length === 0 ? (
+                  <div className="sm:col-span-2">
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      No unassigned vehicles available. All vehicles are assigned to other drivers.
+                    </p>
+                  </div>
+                ) : (
+                  <Select 
+                    id="edit_assigned_vehicle"
+                    name="assigned_vehicle_id"
+                    label="Assigned Vehicle" 
+                    value={form.assigned_vehicle_id ?? ""} 
+                    onChange={(e) => setForm({ ...form, assigned_vehicle_id: e.target.value || null })}
+                    className="sm:col-span-2"
+                    autoComplete="off"
+                  >
+                    <option value="">Unassigned</option>
+                    {vehicles.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.make} {v.model} 
+                        {v.registration_number ? ` (${v.registration_number})` : ''} 
+                        {v.status !== 'active' ? ` [${v.status}]` : ''}
+                        {v.assigned_driver_id === id ? ' (Current)' : ''}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+                
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                  <label htmlFor="edit_notes" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                     Notes
                   </label>
                   <textarea
+                    id="edit_notes"
+                    name="notes"
                     value={form.notes ?? ""}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
                     rows={3}
@@ -686,7 +761,6 @@ export function DriverDetailPage() {
             </form>
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              {/* Personal Information */}
               <div className="space-y-4">
                 <h4 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Personal Information</h4>
                 <Field 
@@ -694,7 +768,6 @@ export function DriverDetailPage() {
                   label="Full Name" 
                   value={driver.full_name} 
                 />
-               
                 <Field 
                   icon={<Phone size={14} />}
                   label="Phone" 
@@ -722,7 +795,6 @@ export function DriverDetailPage() {
                 />
               </div>
 
-              {/* License & Assignment */}
               <div className="space-y-4">
                 <h4 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">License & Assignment</h4>
                 <Field 
@@ -807,7 +879,6 @@ export function DriverDetailPage() {
                 />
               </div>
 
-              {/* Emergency Contact */}
               <div className="sm:col-span-2 space-y-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
                 <h4 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Emergency Contact</h4>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -824,7 +895,6 @@ export function DriverDetailPage() {
                 </div>
               </div>
 
-              {/* Notes */}
               {driver.notes && (
                 <div className="sm:col-span-2 space-y-2 pt-4 border-t border-neutral-200 dark:border-neutral-800">
                   <h4 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Notes</h4>
@@ -839,7 +909,6 @@ export function DriverDetailPage() {
           )}
         </div>
 
-        {/* Documents section */}
         <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Documents</h3>
@@ -849,13 +918,15 @@ export function DriverDetailPage() {
             Upload and manage driver documents
           </p>
           
-          {/* Upload section */}
           {canUpdate && (
             <div className="mt-3 space-y-2">
               <Select
+                id="document_category"
+                name="document_category"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full"
+                autoComplete="off"
               >
                 {DOCUMENT_CATEGORIES.map((cat) => (
                   <option key={cat.value} value={cat.value}>
@@ -868,6 +939,8 @@ export function DriverDetailPage() {
                 <Upload size={16} />
                 {uploading ? "Uploading…" : `Upload ${DOCUMENT_CATEGORIES.find(c => c.value === selectedCategory)?.label}`}
                 <input 
+                  id="document_upload"
+                  name="document_upload"
                   type="file" 
                   className="hidden" 
                   onChange={handleUpload} 
@@ -875,7 +948,6 @@ export function DriverDetailPage() {
                 />
               </label>
 
-              {/* Upload Progress Bar */}
               {uploadProgress && (
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center justify-between text-xs">
@@ -887,7 +959,6 @@ export function DriverDetailPage() {
                     </span>
                   </div>
                   
-                  {/* Progress bar */}
                   <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
                     <div 
                       className={`h-full rounded-full transition-all duration-300 ease-out ${
@@ -901,7 +972,6 @@ export function DriverDetailPage() {
                     />
                   </div>
                   
-                  {/* Status message */}
                   {uploadProgress.status === 'uploading' && (
                     <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
                       <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
@@ -927,7 +997,6 @@ export function DriverDetailPage() {
             </div>
           )}
           
-          {/* Document categories */}
           <div className="mt-4 space-y-4 max-h-[400px] overflow-y-auto">
             {DOCUMENT_CATEGORIES.map((category) => {
               const docs = getDocumentsByCategory(category.value);

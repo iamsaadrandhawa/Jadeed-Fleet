@@ -138,9 +138,10 @@ export function DashboardPage() {
           .select("id, make, model, registration_number, status, created_at")
           .order("created_at", { ascending: false })
           .limit(5),
+        // FIXED: Removed 'email' and 'created_at', added 'employee_id'
         supabase
           .from("drivers")
-          .select("id, full_name, email, status, created_at")
+          .select("id, full_name, employee_id, status, license_expiry")
           .order("created_at", { ascending: false })
           .limit(5),
         supabase
@@ -257,12 +258,10 @@ export function DashboardPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-3">
-            
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
                 {greeting}, <span className="text-red-600 dark:text-red-500">{profile?.full_name ?? "User"}</span>!
               </h1>
-              
             </div>
           </div>
         </div>
@@ -597,9 +596,9 @@ export function DashboardPage() {
                         <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
                           {d.full_name}
                         </p>
-                        {d.email && (
+                        {d.employee_id && (
                           <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                            {d.email}
+                            ID: {d.employee_id}
                           </p>
                         )}
                       </div>

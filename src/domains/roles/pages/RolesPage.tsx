@@ -137,7 +137,7 @@ export function RolesPage() {
       />
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm">
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-200 dark:border-neutral-800 border-t-neutral-900 dark:border-t-neutral-100" />
@@ -150,12 +150,12 @@ export function RolesPage() {
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">
-                    <th className="px-4 py-3">Role</th>
-                    <th className="px-4 py-3">Description</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Permissions</th>
-                    <th className="px-4 py-3" />
+                  <tr className="border-b-2 border-neutral-200 dark:border-neutral-700 bg-neutral-50/80 dark:bg-neutral-800/50 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                    <th className="px-4 py-3.5">Role</th>
+                    <th className="px-4 py-3.5">Description</th>
+                    <th className="px-4 py-3.5">Status</th>
+                    <th className="px-4 py-3.5">Permissions</th>
+                    <th className="px-4 py-3.5 w-12" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -168,28 +168,39 @@ export function RolesPage() {
                       : 0;
                     
                     return (
-                      <tr key={r.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800 dark:bg-neutral-800">
-                        <td className="px-4 py-3">
-                          <p className="font-medium text-neutral-900 dark:text-neutral-100">{r.name}</p>
-                          {r.is_system && <span className="text-xs text-neutral-400 dark:text-neutral-500">System</span>}
+                      <tr key={r.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors duration-150">
+                        <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
+                          <div>
+                            <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                              {r.name}
+                            </p>
+                            {r.is_system && (
+                              <Badge tone="neutral" className="text-xs mt-0.5">
+                                System
+                              </Badge>
+                            )}
+                          </div>
                         </td>
-                        <td className="px-4 py-3 text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">
+                        <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400">
                           {r.description ?? "—"}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
                           <Badge tone={r.status === "active" ? "success" : "neutral"} dot>
                             {r.status}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3">
-                          <Badge tone="neutral">{permCount} permissions</Badge>
+                        <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800">
+                          <Badge tone="neutral" className="text-xs">
+                            {permCount} permission{permCount !== 1 ? "s" : ""}
+                          </Badge>
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800 text-right">
                           <div className="flex justify-end gap-1">
                             {canUpdate && (
                               <button 
                                 onClick={() => openEdit(r)} 
-                                className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 dark:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100 dark:text-neutral-100"
+                                className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
+                                title="Edit role"
                               >
                                 <Pencil size={16} />
                               </button>
@@ -197,7 +208,8 @@ export function RolesPage() {
                             {canDelete && !r.is_system && r.name !== "Super Admin" && (
                               <button 
                                 onClick={() => handleDelete(r)} 
-                                className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-red-50 dark:hover:bg-red-950/50 hover:text-red-600 dark:hover:text-red-400 dark:text-red-400"
+                                className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                                title="Delete role"
                               >
                                 <Trash2 size={16} />
                               </button>
@@ -222,35 +234,40 @@ export function RolesPage() {
                   : 0;
                 
                 return (
-                  <div key={r.id} className="px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-neutral-900 dark:text-neutral-100">{r.name}</p>
+                  <div key={r.id} className="px-4 py-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors duration-150">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                            {r.name}
+                          </p>
                           {r.is_system && (
-                            <Badge tone="neutral" className="text-xs">System</Badge>
+                            <Badge tone="neutral" className="text-xs">
+                              System
+                            </Badge>
                           )}
                         </div>
                         {r.description && (
-                          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400 truncate">
                             {r.description}
                           </p>
                         )}
                       </div>
-                      <Badge tone={r.status === "active" ? "success" : "neutral"} dot>
+                      <Badge tone={r.status === "active" ? "success" : "neutral"} dot className="flex-shrink-0">
                         {r.status}
                       </Badge>
                     </div>
                     
                     <div className="mt-3 flex items-center justify-between">
                       <Badge tone="neutral" className="text-xs">
-                        {permCount} permissions
+                        {permCount} permission{permCount !== 1 ? "s" : ""}
                       </Badge>
                       <div className="flex gap-1">
                         {canUpdate && (
                           <button 
                             onClick={() => openEdit(r)} 
-                            className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100"
+                            className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
+                            title="Edit role"
                           >
                             <Pencil size={16} />
                           </button>
@@ -258,7 +275,8 @@ export function RolesPage() {
                         {canDelete && !r.is_system && r.name !== "Super Admin" && (
                           <button 
                             onClick={() => handleDelete(r)} 
-                            className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-red-50 dark:hover:bg-red-950/50 hover:text-red-600 dark:hover:text-red-400"
+                            className="rounded-md p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                            title="Delete role"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -277,20 +295,33 @@ export function RolesPage() {
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input 
+              id="role-name"
+              name="name"
               label="Role Name" 
               required 
               value={name} 
               onChange={(e) => setName(e.target.value)} 
-              disabled={editingRole?.is_system} 
+              disabled={editingRole?.is_system}
+              autoComplete="off"
             />
-            <Select label="Status" value="active" disabled>
+            <Select 
+              id="role-status"
+              name="status"
+              label="Status" 
+              value="active" 
+              disabled
+              autoComplete="off"
+            >
               <option value="active">Active</option>
             </Select>
           </div>
           <Input 
+            id="role-description"
+            name="description"
             label="Description" 
             value={description} 
-            onChange={(e) => setDescription(e.target.value)} 
+            onChange={(e) => setDescription(e.target.value)}
+            autoComplete="off"
           />
 
           <div>
@@ -298,7 +329,7 @@ export function RolesPage() {
             <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">
+                  <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
                     <th className="px-3 py-2 min-w-[80px]">Module</th>
                     {CRUD_ACTIONS.map((a) => (
                       <th key={a} className="px-3 py-2 text-center min-w-[50px] capitalize">{a}</th>
@@ -307,17 +338,19 @@ export function RolesPage() {
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                   {DOMAINS.map((domain) => (
-                    <tr key={domain} className="hover:bg-neutral-50 dark:hover:bg-neutral-800 dark:bg-neutral-800">
+                    <tr key={domain} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors duration-150">
                       <td className="px-3 py-2 font-medium text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
                         {DOMAIN_LABELS[domain]}
                       </td>
                       {CRUD_ACTIONS.map((action) => (
                         <td key={action} className="px-3 py-2 text-center">
                           <input
+                            id={`perm-${domain}-${action}`}
+                            name={`perm-${domain}-${action}`}
                             type="checkbox"
                             checked={perm[domain]?.[action] ?? false}
                             onChange={() => togglePerm(domain, action)}
-                            className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 focus:ring-neutral-400"
+                            className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-neutral-400 focus:ring-offset-1 dark:focus:ring-neutral-500 transition-colors"
                           />
                         </td>
                       ))}

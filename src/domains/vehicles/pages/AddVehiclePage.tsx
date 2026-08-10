@@ -53,7 +53,8 @@ export function AddVehiclePage() {
     setSaving(true);
 
     try {
-      // OPTIMIZATION 1: Insert without SELECT
+      // Insert the vehicle - DO NOT include assigned_driver_id here
+      // It should only be set when assigning a driver to the vehicle
       const { error: insertErr } = await supabase
         .from("vehicles")
         .insert({
@@ -65,12 +66,16 @@ export function AddVehiclePage() {
           insurance_provider: form.insurance_provider || null,
           insurance_policy_number: form.insurance_policy_number || null,
           insurance_expiry: form.insurance_expiry || null,
-          status: form.status,
+          status: form.status || "active",
           department: form.department || null,
+          // DO NOT include assigned_driver_id - it should be null by default
+          // DO NOT include id - it's auto-generated
         });
 
       if (insertErr) {
-        // OPTIMIZATION 2: Better error messages for duplicate entries
+        console.error("❌ Insert error:", insertErr);
+        
+        // Better error messages for duplicate entries
         if (insertErr.code === "23505") {
           if (insertErr.message.includes("vin")) {
             setError("A vehicle with this VIN already exists.");
@@ -86,12 +91,11 @@ export function AddVehiclePage() {
         return;
       }
 
-      // OPTIMIZATION 3: Log action asynchronously (fire and forget)
-      // Don't await this - let it run in the background
+      // Log action asynchronously (fire and forget)
       logAction("create", "vehicle", "new", `Created vehicle ${form.make} ${form.model}`)
         .catch(err => console.error("Failed to log action:", err));
 
-      // OPTIMIZATION 4: Navigate immediately with refresh flag
+      // Navigate immediately with refresh flag
       navigate("/UI/vehicles", { 
         state: { 
           refresh: true,
@@ -124,68 +128,98 @@ export function AddVehiclePage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input 
+              id="make"
+              name="make"
               label="Make" 
               required 
               value={form.make} 
               onChange={(e) => set("make", e.target.value)} 
               disabled={saving}
+              autoComplete="off"
             />
             <Input 
+              id="model"
+              name="model"
               label="Model" 
               required 
               value={form.model} 
               onChange={(e) => set("model", e.target.value)} 
               disabled={saving}
+              autoComplete="off"
             />
             <Input 
+              id="year"
+              name="year"
               label="Year" 
               type="number" 
               value={form.year} 
               onChange={(e) => set("year", e.target.value)} 
               disabled={saving}
+              autoComplete="off"
             />
             <Input 
+              id="vin"
+              name="vin"
               label="VIN" 
               value={form.vin} 
               onChange={(e) => set("vin", e.target.value)} 
               disabled={saving}
+              autoComplete="off"
             />
             <Input 
+              id="registration_number"
+              name="registration_number"
               label="Registration Number" 
               value={form.registration_number} 
               onChange={(e) => set("registration_number", e.target.value)} 
               disabled={saving}
+              autoComplete="off"
             />
             <Input 
+              id="department"
+              name="department"
               label="Department" 
               value={form.department} 
               onChange={(e) => set("department", e.target.value)} 
               disabled={saving}
+              autoComplete="organization"
             />
             <Input 
+              id="insurance_provider"
+              name="insurance_provider"
               label="Insurance Provider" 
               value={form.insurance_provider} 
               onChange={(e) => set("insurance_provider", e.target.value)} 
               disabled={saving}
+              autoComplete="off"
             />
             <Input 
+              id="insurance_policy_number"
+              name="insurance_policy_number"
               label="Insurance Policy Number" 
               value={form.insurance_policy_number} 
               onChange={(e) => set("insurance_policy_number", e.target.value)} 
               disabled={saving}
+              autoComplete="off"
             />
             <Input 
+              id="insurance_expiry"
+              name="insurance_expiry"
               label="Insurance Expiry" 
               type="date" 
               value={form.insurance_expiry} 
               onChange={(e) => set("insurance_expiry", e.target.value)} 
               disabled={saving}
+              autoComplete="off"
             />
             <Select 
+              id="status"
+              name="status"
               label="Status" 
               value={form.status} 
               onChange={(e) => set("status", e.target.value)}
               disabled={saving}
+              autoComplete="off"
             >
               <option value="active">Active</option>
               <option value="maintenance">In Maintenance</option>
