@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { 
-  ArrowLeft, 
-  Trash2, 
-  Save, 
-  Upload, 
-  FileText, 
+import {
+  ArrowLeft,
+  Trash2,
+  Save,
+  Upload,
+  FileText,
   Download,
   Car,
   Hash,
@@ -124,13 +124,13 @@ export function VehicleDetailPage() {
 
       if (vehicleError) {
         console.error("Error loading vehicle:", vehicleError);
-        
+
         if (vehicleError.code === "PGRST116") {
           setError("Vehicle not found. Please check the ID.");
         } else {
           setError(`Failed to load vehicle: ${vehicleError.message}`);
         }
-        
+
         setLoading(false);
         return;
       }
@@ -149,7 +149,7 @@ export function VehicleDetailPage() {
         console.log("🔄 Fetching assigned driver:", vehicleData.assigned_driver_id);
         const { data: driverData, error: driverError } = await supabase
           .from("drivers")
-          .select("id, full_name, email, phone, status, assigned_vehicle_id")
+          .select("id, full_name, phone, status, assigned_vehicle_id")   // ← "email" here
           .eq("id", vehicleData.assigned_driver_id)
           .single();
 
@@ -193,10 +193,10 @@ export function VehicleDetailPage() {
   async function loadDrivers(currentVehicle?: Vehicle) {
     try {
       const vehicleData = currentVehicle || vehicle;
-      
+
       const { data: driversData, error: driversError } = await supabase
         .from("drivers")
-        .select("id, full_name, status, email, phone, assigned_vehicle_id")
+        .select("id, full_name, phone, status, assigned_vehicle_id")
         .order("full_name", { ascending: true });
 
       if (driversError) {
@@ -207,9 +207,9 @@ export function VehicleDetailPage() {
 
       // Get the current vehicle's assigned driver ID
       const currentDriverId = vehicleData?.assigned_driver_id;
-      
+
       console.log("📋 Current driver ID:", currentDriverId);
-      
+
       // Filter drivers: show unassigned + currently assigned to this vehicle
       const filteredDrivers = (driversData ?? []).filter((driver) => {
         // If driver is assigned to this vehicle, show them
@@ -219,7 +219,7 @@ export function VehicleDetailPage() {
         // Otherwise, hide them (they're assigned to another vehicle)
         return false;
       });
-      
+
       console.log("📋 Filtered drivers:", filteredDrivers.length);
       setDrivers(filteredDrivers as Driver[]);
     } catch (err) {
@@ -239,14 +239,14 @@ export function VehicleDetailPage() {
         const docs = data.map((file) => {
           let category = "other";
           const fileName = file.name.toLowerCase();
-          
+
           for (const cat of DOCUMENT_CATEGORIES) {
             if (fileName.includes(cat.value) || fileName.includes(cat.label.toLowerCase())) {
               category = cat.value;
               break;
             }
           }
-          
+
           return {
             name: file.name,
             path: `${id}/${file.name}`,
@@ -255,7 +255,7 @@ export function VehicleDetailPage() {
             type: file.metadata?.mimetype,
           };
         });
-        
+
         setDocuments(docs);
       } else {
         setDocuments([]);
@@ -269,7 +269,7 @@ export function VehicleDetailPage() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !id) return;
-    
+
     if (file.size > 10 * 1024 * 1024) {
       setError("File size must be less than 10MB");
       return;
@@ -277,7 +277,7 @@ export function VehicleDetailPage() {
 
     setUploading(true);
     setError(null);
-    
+
     setUploadProgress({
       fileName: file.name,
       progress: 0,
@@ -301,7 +301,7 @@ export function VehicleDetailPage() {
 
       const { error: uploadErr } = await supabase.storage
         .from("vehicle-documents")
-        .upload(filePath, file, { 
+        .upload(filePath, file, {
           upsert: false,
           cacheControl: '3600'
         });
@@ -313,7 +313,7 @@ export function VehicleDetailPage() {
         setError(`Upload failed: ${uploadErr.message}`);
       } else {
         setUploadProgress(prev => prev ? { ...prev, progress: 100, status: 'completed' } : null);
-        
+
         const newDoc: VehicleDocument = {
           name: fileName,
           path: filePath,
@@ -321,12 +321,12 @@ export function VehicleDetailPage() {
           size: file.size,
           type: file.type,
         };
-        
+
         setDocuments(prev => [...prev, newDoc]);
-        
+
         await logAction("update", "vehicle", id, `Uploaded document ${fileName} (${selectedCategory})`);
         setSuccess(`Document "${file.name}" uploaded successfully as ${selectedCategory}`);
-        
+
         setTimeout(() => {
           setUploadProgress(null);
         }, 2000);
@@ -359,7 +359,7 @@ export function VehicleDetailPage() {
 
   const handleDeleteDocument = async (doc: VehicleDocument) => {
     if (!confirm(`Delete document "${doc.name}"? This cannot be undone.`)) return;
-    
+
     setDeletingDoc(doc.path);
     try {
       const { error: deleteErr } = await supabase.storage
@@ -434,9 +434,9 @@ export function VehicleDetailPage() {
       }
 
       await logAction("update", "vehicle", id, `Updated vehicle ${form.make} ${form.model}`);
-      
+
       await loadVehicleData();
-      
+
       setSuccess("Vehicle updated successfully!");
       setTimeout(() => setSuccess(null), 3000);
       setEditing(false);
@@ -505,8 +505,8 @@ export function VehicleDetailPage() {
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
           The vehicle you're looking for doesn't exist or has been removed.
         </p>
-        <Link 
-          to="/UI/vehicles" 
+        <Link
+          to="/UI/vehicles"
           className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
         >
           Return to vehicles list
@@ -517,8 +517,8 @@ export function VehicleDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Link 
-        to="/UI/vehicles" 
+      <Link
+        to="/UI/vehicles"
         className="inline-flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
       >
         <ArrowLeft size={16} /> Back to vehicles
@@ -575,74 +575,74 @@ export function VehicleDetailPage() {
           {editing ? (
             <form onSubmit={handleSave} className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Input 
-                  label="Make" 
+                <Input
+                  label="Make"
                   required
-                  value={form.make ?? ""} 
-                  onChange={(e) => setForm({ ...form, make: e.target.value })} 
+                  value={form.make ?? ""}
+                  onChange={(e) => setForm({ ...form, make: e.target.value })}
                 />
-                <Input 
-                  label="Model" 
+                <Input
+                  label="Model"
                   required
-                  value={form.model ?? ""} 
-                  onChange={(e) => setForm({ ...form, model: e.target.value })} 
+                  value={form.model ?? ""}
+                  onChange={(e) => setForm({ ...form, model: e.target.value })}
                 />
-                <Input 
-                  label="Year" 
-                  type="number" 
-                  value={form.year ?? ""} 
-                  onChange={(e) => setForm({ ...form, year: parseInt(e.target.value) || null })} 
+                <Input
+                  label="Year"
+                  type="number"
+                  value={form.year ?? ""}
+                  onChange={(e) => setForm({ ...form, year: parseInt(e.target.value) || null })}
                 />
-                <Input 
-                  label="VIN" 
-                  value={form.vin ?? ""} 
-                  onChange={(e) => setForm({ ...form, vin: e.target.value })} 
+                <Input
+                  label="VIN"
+                  value={form.vin ?? ""}
+                  onChange={(e) => setForm({ ...form, vin: e.target.value })}
                 />
-                <Input 
-                  label="Registration Number" 
-                  value={form.registration_number ?? ""} 
-                  onChange={(e) => setForm({ ...form, registration_number: e.target.value })} 
+                <Input
+                  label="Registration Number"
+                  value={form.registration_number ?? ""}
+                  onChange={(e) => setForm({ ...form, registration_number: e.target.value })}
                 />
-                <Input 
-                  label="Department" 
-                  value={form.department ?? ""} 
-                  onChange={(e) => setForm({ ...form, department: e.target.value })} 
+                <Input
+                  label="Department"
+                  value={form.department ?? ""}
+                  onChange={(e) => setForm({ ...form, department: e.target.value })}
                 />
-                <Input 
-                  label="Insurance Provider" 
-                  value={form.insurance_provider ?? ""} 
-                  onChange={(e) => setForm({ ...form, insurance_provider: e.target.value })} 
+                <Input
+                  label="Insurance Provider"
+                  value={form.insurance_provider ?? ""}
+                  onChange={(e) => setForm({ ...form, insurance_provider: e.target.value })}
                 />
-                <Input 
-                  label="Insurance Policy Number" 
-                  value={form.insurance_policy_number ?? ""} 
-                  onChange={(e) => setForm({ ...form, insurance_policy_number: e.target.value })} 
+                <Input
+                  label="Insurance Policy Number"
+                  value={form.insurance_policy_number ?? ""}
+                  onChange={(e) => setForm({ ...form, insurance_policy_number: e.target.value })}
                 />
-                <Input 
-                  label="Insurance Expiry" 
-                  type="date" 
-                  value={form.insurance_expiry ?? ""} 
-                  onChange={(e) => setForm({ ...form, insurance_expiry: e.target.value })} 
+                <Input
+                  label="Insurance Expiry"
+                  type="date"
+                  value={form.insurance_expiry ?? ""}
+                  onChange={(e) => setForm({ ...form, insurance_expiry: e.target.value })}
                 />
-                <Select 
-                  label="Status" 
-                  value={form.status ?? "active"} 
+                <Select
+                  label="Status"
+                  value={form.status ?? "active"}
                   onChange={(e) => setForm({ ...form, status: e.target.value })}
                 >
                   <option value="active">Active</option>
                   <option value="maintenance">In Maintenance</option>
                   <option value="inactive">Inactive</option>
                 </Select>
-                <Select 
-                  label="Assigned Driver" 
-                  value={form.assigned_driver_id ?? ""} 
+                <Select
+                  label="Assigned Driver"
+                  value={form.assigned_driver_id ?? ""}
                   onChange={(e) => setForm({ ...form, assigned_driver_id: e.target.value || null })}
                   className="sm:col-span-2"
                 >
                   <option value="">Unassigned</option>
                   {drivers.map((d) => (
                     <option key={d.id} value={d.id}>
-                      {d.full_name} 
+                      {d.full_name}
                       {d.status !== "active" ? ` (${d.status})` : ""}
                       {d.assigned_vehicle_id && d.assigned_vehicle_id === id ? " (Current)" : ""}
                     </option>
@@ -655,12 +655,12 @@ export function VehicleDetailPage() {
                 )}
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <Button 
-                  type="button" 
-                  variant="secondary" 
-                  onClick={() => { 
-                    setEditing(false); 
-                    setForm(vehicle); 
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setEditing(false);
+                    setForm(vehicle);
                     setError(null);
                   }}
                 >
@@ -727,7 +727,7 @@ export function VehicleDetailPage() {
                   <dd className="mt-1">
                     {vehicle.assigned_driver ? (
                       <div className="flex flex-col gap-1">
-                        <Link 
+                        <Link
                           to={`/UI/drivers/${vehicle.assigned_driver.id}`}
                           className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                         >
@@ -744,13 +744,13 @@ export function VehicleDetailPage() {
                     )}
                   </dd>
                 </div>
-                <Field 
-                  label="Status" 
+                <Field
+                  label="Status"
                   value={
                     <Badge tone={statusTone(vehicle.status)} dot className="mt-1">
                       {vehicle.status}
                     </Badge>
-                  } 
+                  }
                 />
               </div>
             </div>
@@ -765,7 +765,7 @@ export function VehicleDetailPage() {
           <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
             Upload and manage vehicle documents
           </p>
-          
+
           {canUpdate && (
             <div className="mt-3 space-y-2">
               <Select
@@ -779,15 +779,15 @@ export function VehicleDetailPage() {
                   </option>
                 ))}
               </Select>
-              
+
               <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-neutral-300 dark:border-neutral-700 px-4 py-3 text-sm text-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800 dark:bg-neutral-800 transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
                 <Upload size={16} />
                 {uploading ? "Uploading…" : `Upload ${DOCUMENT_CATEGORIES.find(c => c.value === selectedCategory)?.label}`}
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  onChange={handleUpload} 
-                  disabled={uploading} 
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={handleUpload}
+                  disabled={uploading}
                 />
               </label>
 
@@ -801,34 +801,33 @@ export function VehicleDetailPage() {
                       {Math.round(uploadProgress.progress)}%
                     </span>
                   </div>
-                  
+
                   <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-300 ease-out ${
-                        uploadProgress.status === 'error' 
-                          ? 'bg-red-500' 
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ease-out ${uploadProgress.status === 'error'
+                          ? 'bg-red-500'
                           : uploadProgress.status === 'completed'
-                          ? 'bg-green-500'
-                          : 'bg-blue-500'
-                      }`}
+                            ? 'bg-green-500'
+                            : 'bg-blue-500'
+                        }`}
                       style={{ width: `${uploadProgress.progress}%` }}
                     />
                   </div>
-                  
+
                   {uploadProgress.status === 'uploading' && (
                     <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
                       <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
                       <span>Uploading...</span>
                     </div>
                   )}
-                  
+
                   {uploadProgress.status === 'completed' && (
                     <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400 animate-in fade-in duration-300">
                       <CheckCircle size={14} />
                       <span>Upload complete!</span>
                     </div>
                   )}
-                  
+
                   {uploadProgress.status === 'error' && (
                     <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
                       <AlertTriangle size={14} />
@@ -839,14 +838,14 @@ export function VehicleDetailPage() {
               )}
             </div>
           )}
-          
+
           <div className="mt-4 space-y-4 max-h-[400px] overflow-y-auto">
             {DOCUMENT_CATEGORIES.map((category) => {
               const docs = getDocumentsByCategory(category.value);
               if (docs.length === 0) return null;
-              
+
               const Icon = category.icon;
-              
+
               return (
                 <div key={category.value} className="space-y-1">
                   <div className="flex items-center gap-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">
@@ -858,8 +857,8 @@ export function VehicleDetailPage() {
                   </div>
                   <div className="space-y-1">
                     {docs.map((doc) => (
-                      <div 
-                        key={doc.path} 
+                      <div
+                        key={doc.path}
                         className="flex items-center justify-between rounded-md border border-neutral-200 dark:border-neutral-800 px-2 py-1.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group"
                       >
                         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -902,7 +901,7 @@ export function VehicleDetailPage() {
                 </div>
               );
             })}
-            
+
             {documents.length === 0 && (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <FolderOpen size={32} className="text-neutral-300 dark:text-neutral-700" />
@@ -917,12 +916,12 @@ export function VehicleDetailPage() {
   );
 }
 
-function Field({ 
-  label, 
-  value, 
-  icon 
-}: { 
-  label: string; 
+function Field({
+  label,
+  value,
+  icon
+}: {
+  label: string;
   value: string | number | React.ReactNode | null | undefined;
   icon?: React.ReactNode;
 }) {

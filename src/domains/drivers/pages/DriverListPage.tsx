@@ -29,18 +29,19 @@ const DriverDesktopRow = memo(function DriverDesktopRow({ d }: { d: DriverRow })
   return (
     <tr className="hover:bg-neutral-50 dark:hover:bg-neutral-800 dark:bg-neutral-800">
       <td className="px-4 py-3">
-        <Link 
-          to={`/UI/drivers/${d.id}`} 
+        <Link
+          to={`/UI/drivers/${d.id}`}
           className="font-medium text-neutral-900 dark:text-neutral-100 hover:underline"
         >
-          {d.full_name}
+          {d.employee_id}
         </Link>
+
       </td>
       <td className="px-4 py-3">
-        {d.employee_id ? (
+        {d.full_name ? (
           <span className="flex items-center gap-1 text-neutral-700 dark:text-neutral-300">
             <IdCard size={12} className="text-neutral-400 dark:text-neutral-500" />
-            {d.employee_id}
+            {d.full_name}
           </span>
         ) : (
           <span className="text-neutral-400 dark:text-neutral-500">—</span>
@@ -100,7 +101,7 @@ const DriverDesktopRow = memo(function DriverDesktopRow({ d }: { d: DriverRow })
             <span className="text-neutral-700 dark:text-neutral-300">
               {d.assigned_vehicle.make} {d.assigned_vehicle.model}
             </span>
-            <Link 
+            <Link
               to={`/UI/vehicles/${d.assigned_vehicle.id}`}
               className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
             >
@@ -117,8 +118,8 @@ const DriverDesktopRow = memo(function DriverDesktopRow({ d }: { d: DriverRow })
         </Badge>
       </td>
       <td className="px-4 py-3 text-right">
-        <Link 
-          to={`/UI/drivers/${d.id}`} 
+        <Link
+          to={`/UI/drivers/${d.id}`}
           className="text-neutral-400 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
         >
           <ChevronRight size={18} />
@@ -139,7 +140,7 @@ const DriverMobileCard = memo(function DriverMobileCard({ d }: { d: DriverRow })
       to={`/UI/drivers/${d.id}`}
       className="block px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800"
     >
-    
+
       <div className="mt-2 space-y-1 text-sm">
         {d.employee_id && (
           <p className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
@@ -225,7 +226,7 @@ export function DriverListPage() {
     } else {
       setRefreshing(true);
     }
-    
+
     setError(null);
 
     try {
@@ -233,8 +234,8 @@ export function DriverListPage() {
         .from("drivers")
         .select(`
           id, 
-          full_name, 
           employee_id,
+          full_name, 
           location,
           license_number, 
           license_class, 
@@ -252,7 +253,7 @@ export function DriverListPage() {
           `full_name.ilike.%${debouncedSearch}%,employee_id.ilike.%${debouncedSearch}%,location.ilike.%${debouncedSearch}%,license_number.ilike.%${debouncedSearch}%`
         );
       }
-      
+
       if (debouncedStatus) {
         query = query.eq("status", debouncedStatus);
       }
@@ -262,7 +263,7 @@ export function DriverListPage() {
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
       const { data, count, error: queryError } = await query;
-      
+
       if (queryError) {
         console.error("Error loading drivers:", queryError);
         setError(`Failed to load drivers: ${queryError.message}`);
@@ -297,7 +298,7 @@ export function DriverListPage() {
         const timer = setTimeout(() => setSuccessMessage(null), 5000);
         return () => clearTimeout(timer);
       }
-      
+
       loadDrivers(false);
       window.history.replaceState({}, document.title);
     }
@@ -371,16 +372,16 @@ export function DriverListPage() {
               <option value="suspended">Suspended</option>
             </Select>
           </div>
-          
+
           {/* Spacer to push search to the right */}
           <div className="flex-1" />
-          
+
           {/* Search and refresh on the right */}
           <div className="flex items-center gap-2 sm:w-auto w-full">
             <div className="relative flex-1 sm:min-w-[260px]">
-              <Search 
-                size={16} 
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" 
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500"
               />
               <input
                 type="text"
@@ -390,7 +391,7 @@ export function DriverListPage() {
                 className="h-10 w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 pl-9 pr-3 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500"
               />
             </div>
-            
+
             {/* Refresh Button */}
             <Button
               size="sm"
@@ -399,9 +400,9 @@ export function DriverListPage() {
               disabled={loading || refreshing}
               className="flex-shrink-0"
             >
-              <RefreshCw 
-                size={16} 
-                className={`${refreshing ? 'animate-spin' : ''}`} 
+              <RefreshCw
+                size={16}
+                className={`${refreshing ? 'animate-spin' : ''}`}
               />
               <span className="sr-only">Refresh</span>
             </Button>
@@ -434,8 +435,8 @@ export function DriverListPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-                    <th className="px-4 py-3">Name</th>
                     <th className="px-4 py-3">Employee ID</th>
+                    <th className="px-4 py-3">Name</th>
                     <th className="px-4 py-3">Location</th>
                     <th className="px-4 py-3">License</th>
                     <th className="px-4 py-3">License Expiry</th>
