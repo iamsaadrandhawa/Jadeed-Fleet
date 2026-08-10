@@ -84,6 +84,7 @@ export function DriverDetailPage() {
   const { permissions } = useAuthStore();
   const [driver, setDriver] = useState<Driver | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +104,21 @@ export function DriverDetailPage() {
     if (!id) return;
     loadDriverData();
   }, [id]);
+
+  useEffect(() => {
+    loadLocationSuggestions();
+  }, []);
+
+  async function loadLocationSuggestions() {
+    const [{ data: d }, { data: v }] = await Promise.all([
+      supabase.from("drivers").select("location").not("location", "is", null),
+      supabase.from("vehicles").select("location").not("location", "is", null),
+    ]);
+    const set = new Set<string>(["Head Office"]);
+    for (const row of d ?? []) if (row.location) set.add(row.location);
+    for (const row of v ?? []) if (row.location) set.add(row.location);
+    setLocationSuggestions(Array.from(set).sort());
+  }
 
   async function loadDriverData() {
     if (!id) return;
@@ -340,7 +356,6 @@ export function DriverDetailPage() {
         .from("drivers")
         .update({
           full_name: form.full_name,
-          email: form.email,
           phone: form.phone,
           cnic: form.cnic,
           address: form.address,
@@ -353,6 +368,7 @@ export function DriverDetailPage() {
           status: form.status || "active",
           assigned_vehicle_id: form.assigned_vehicle_id || null,
           notes: form.notes,
+          location: form.location || null,
         })
         .eq("id", id);
 
@@ -384,6 +400,7 @@ export function DriverDetailPage() {
       await logAction("update", "driver", id, `Updated driver ${form.full_name}`);
       
       await loadDriverData();
+      await loadLocationSuggestions();
       
       setSuccess("Driver updated successfully!");
       setTimeout(() => setSuccess(null), 3000);
@@ -485,14 +502,8 @@ export function DriverDetailPage() {
       <PageHeader
         title={driver.full_name}
         description={
-          // FIX: Changed from <div> to <span> with flex
-          <span className="flex flex-wrap items-center gap-3">
-            {driver.email && (
-              <span className="text-neutral-500 dark:text-neutral-400">
-                {driver.email}
-              </span>
-            )}
-            <Badge tone={statusTone(driver.status)} dot>
+          <span className="flex items-center gap-2">
+          <Badge tone={statusTone(driver.status)} dot>
               {driver.status}
             </Badge>
             {driver.license_number && (
@@ -503,6 +514,11 @@ export function DriverDetailPage() {
             {driver.cnic && (
               <Badge tone="neutral">
                 CNIC: {driver.cnic}
+              </Badge>
+            )}
+            {driver.location && (
+              <Badge tone="info">
+                {driver.location}
               </Badge>
             )}
           </span>
@@ -536,12 +552,7 @@ export function DriverDetailPage() {
                   value={form.full_name ?? ""} 
                   onChange={(e) => setForm({ ...form, full_name: e.target.value })} 
                 />
-                <Input 
-                  label="Email" 
-                  type="email" 
-                  value={form.email ?? ""} 
-                  onChange={(e) => setForm({ ...form, email: e.target.value })} 
-                />
+              
                 <Input 
                   label="Phone" 
                   value={form.phone ?? ""} 
@@ -559,6 +570,27 @@ export function DriverDetailPage() {
                   onChange={(e) => setForm({ ...form, address: e.target.value })} 
                   className="sm:col-span-2"
                 />
+
+                {/* Site / Location */}
+                <div className="sm:col-span-2">
+                  <Input
+                    label="Site / Location"
+                    value={form.location ?? ""}
+                    onChange={(e) => setForm({ ...form, location: e.target.value })}
+                    placeholder="e.g. Head Office, Lahore Site, Karachi Warehouse"
+                    list="location-suggestions"
+                  />
+                  <datalist id="location-suggestions">
+                    {locationSuggestions.map((loc) => (
+                      <option key={loc} value={loc} />
+                    ))}
+                  </datalist>
+                  {form.assigned_vehicle_id && (
+                    <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
+                      This driver's assigned vehicle location updates automatically to match.
+                    </p>
+                  )}
+                </div>
                 
                 {/* Emergency Contact */}
                 <Input 
@@ -662,11 +694,7 @@ export function DriverDetailPage() {
                   label="Full Name" 
                   value={driver.full_name} 
                 />
-                <Field 
-                  icon={<Mail size={14} />}
-                  label="Email" 
-                  value={driver.email} 
-                />
+               
                 <Field 
                   icon={<Phone size={14} />}
                   label="Phone" 
@@ -681,6 +709,11 @@ export function DriverDetailPage() {
                   icon={<MapPin size={14} />}
                   label="Address" 
                   value={driver.address} 
+                />
+                <Field 
+                  icon={<Briefcase size={14} />}
+                  label="Site / Location" 
+                  value={driver.location} 
                 />
                 <Field 
                   icon={<Clock size={14} />}

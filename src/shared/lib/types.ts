@@ -39,7 +39,6 @@ export interface Profile {
 export interface Driver {
   id: string;
   full_name: string;
-  email: string | null;
   phone: string | null;
   license_number: string | null;
   license_class: string | null;
@@ -47,12 +46,19 @@ export interface Driver {
   years_experience: number | null;
   status: string;
   assigned_vehicle_id: string | null;
+  employee_id: string | null;
+  department: string | null;
+  job_title: string | null;
+  joining_date: string | null;
+  cnic: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  location: string | null;
   created_at: string;
   updated_at: string;
   assigned_vehicle?: Vehicle | null;
 }
 
-// types.ts
 export interface Vehicle {
   id: string;
   make: string;
@@ -64,15 +70,12 @@ export interface Vehicle {
   insurance_policy_number: string | null;
   insurance_expiry: string | null;
   status: string;
+  assigned_driver_id: string | null;
   department: string | null;
+  location: string | null;
   created_at: string;
   updated_at: string;
-  assigned_driver_id: string | null;
-  // Add this for the relation
-  assigned_driver?: {
-    id: string;
-    full_name: string;
-  } | null;
+  assigned_driver?: Driver | null;
 }
 
 export interface AuditLog {

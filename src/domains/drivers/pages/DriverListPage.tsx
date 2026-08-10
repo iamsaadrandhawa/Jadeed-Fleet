@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, memo, useCallback, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, Plus, Users as UsersIcon, ChevronRight, RefreshCw, Calendar, Hash, Mail, Car } from "lucide-react";
+import { Search, Plus, Users as UsersIcon, ChevronRight, RefreshCw, Calendar, Hash, Mail, Car, MapPin, IdCard } from "lucide-react";
 import { supabase } from "@/shared/lib/supabaseClient";
 import { useAuthStore } from "@/shared/store/authStore";
 import { can } from "@/shared/lib/permissions";
@@ -35,11 +35,25 @@ const DriverDesktopRow = memo(function DriverDesktopRow({ d }: { d: DriverRow })
         >
           {d.full_name}
         </Link>
-        {d.email && (
-          <p className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
-            <Mail size={12} />
-            {d.email}
-          </p>
+      </td>
+      <td className="px-4 py-3">
+        {d.employee_id ? (
+          <span className="flex items-center gap-1 text-neutral-700 dark:text-neutral-300">
+            <IdCard size={12} className="text-neutral-400 dark:text-neutral-500" />
+            {d.employee_id}
+          </span>
+        ) : (
+          <span className="text-neutral-400 dark:text-neutral-500">—</span>
+        )}
+      </td>
+      <td className="px-4 py-3">
+        {d.location ? (
+          <span className="flex items-center gap-1 text-neutral-700 dark:text-neutral-300">
+            <MapPin size={12} className="text-neutral-400 dark:text-neutral-500" />
+            {d.location}
+          </span>
+        ) : (
+          <span className="text-neutral-400 dark:text-neutral-500">—</span>
         )}
       </td>
       <td className="px-4 py-3">
@@ -125,20 +139,20 @@ const DriverMobileCard = memo(function DriverMobileCard({ d }: { d: DriverRow })
       to={`/UI/drivers/${d.id}`}
       className="block px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800"
     >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="font-medium text-neutral-900 dark:text-neutral-100">{d.full_name}</p>
-          {d.email && (
-            <p className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
-              <Mail size={12} />
-              {d.email}
-            </p>
-          )}
-        </div>
-        <Badge tone={statusTone(d.status)} dot>{d.status}</Badge>
-      </div>
-      
+    
       <div className="mt-2 space-y-1 text-sm">
+        {d.employee_id && (
+          <p className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
+            <IdCard size={14} className="text-neutral-400 dark:text-neutral-500" />
+            <span>{d.employee_id}</span>
+          </p>
+        )}
+        {d.location && (
+          <p className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
+            <MapPin size={14} className="text-neutral-400 dark:text-neutral-500" />
+            <span>{d.location}</span>
+          </p>
+        )}
         {d.license_number && (
           <p className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
             <Hash size={14} className="text-neutral-400 dark:text-neutral-500" />
@@ -220,7 +234,8 @@ export function DriverListPage() {
         .select(`
           id, 
           full_name, 
-          email, 
+          employee_id,
+          location,
           license_number, 
           license_class, 
           license_expiry, 
@@ -234,7 +249,7 @@ export function DriverListPage() {
 
       if (debouncedSearch) {
         query = query.or(
-          `full_name.ilike.%${debouncedSearch}%,email.ilike.%${debouncedSearch}%,license_number.ilike.%${debouncedSearch}%`
+          `full_name.ilike.%${debouncedSearch}%,employee_id.ilike.%${debouncedSearch}%,location.ilike.%${debouncedSearch}%,license_number.ilike.%${debouncedSearch}%`
         );
       }
       
@@ -362,14 +377,14 @@ export function DriverListPage() {
           
           {/* Search and refresh on the right */}
           <div className="flex items-center gap-2 sm:w-auto w-full">
-            <div className="relative flex-1 sm:min-w-[200px]">
+            <div className="relative flex-1 sm:min-w-[260px]">
               <Search 
                 size={16} 
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" 
               />
               <input
                 type="text"
-                placeholder="Search drivers..."
+                placeholder="Search by name, employee ID, or location..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="h-10 w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 pl-9 pr-3 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500"
@@ -420,6 +435,8 @@ export function DriverListPage() {
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
                     <th className="px-4 py-3">Name</th>
+                    <th className="px-4 py-3">Employee ID</th>
+                    <th className="px-4 py-3">Location</th>
                     <th className="px-4 py-3">License</th>
                     <th className="px-4 py-3">License Expiry</th>
                     <th className="px-4 py-3">Assigned Vehicle</th>

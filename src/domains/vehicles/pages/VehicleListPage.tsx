@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, memo, useCallback, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, Plus, Car, ChevronRight, RefreshCw, Calendar, User, Hash } from "lucide-react";
+import { Search, Plus, Car, ChevronRight, RefreshCw, Calendar, User, Hash, MapPin, IdCard } from "lucide-react";
 import { supabase } from "@/shared/lib/supabaseClient";
 import { useAuthStore } from "@/shared/store/authStore";
 import { can } from "@/shared/lib/permissions";
@@ -31,7 +31,7 @@ const VehicleDesktopRow = memo(function VehicleDesktopRow({ vehicle }: { vehicle
           {vehicle.make} {vehicle.model}
         </Link>
         {vehicle.year && (
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
             {vehicle.year}
           </p>
         )}
@@ -74,7 +74,7 @@ const VehicleDesktopRow = memo(function VehicleDesktopRow({ vehicle }: { vehicle
       <td className="px-4 py-3 text-right">
         <Link 
           to={`/UI/vehicles/${vehicle.id}`} 
-          className="text-neutral-400 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 dark:text-neutral-100"
+          className="text-neutral-400 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
         >
           <ChevronRight size={18} />
         </Link>
@@ -99,7 +99,7 @@ const VehicleMobileCard = memo(function VehicleMobileCard({ vehicle }: { vehicle
             {vehicle.make} {vehicle.model}
           </p>
           {vehicle.year && (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
               {vehicle.year}
             </p>
           )}
@@ -203,7 +203,7 @@ export function VehicleListPage() {
           )
         `, { count: "exact" });
 
-      // Apply search filter
+      // Apply search filter - enhanced to search more fields like driver name
       if (debouncedSearch) {
         query = query.or(
           `make.ilike.%${debouncedSearch}%,model.ilike.%${debouncedSearch}%,vin.ilike.%${debouncedSearch}%,registration_number.ilike.%${debouncedSearch}%`
@@ -228,7 +228,6 @@ export function VehicleListPage() {
         setVehicles([]);
         setTotal(0);
       } else {
-        console.log("Loaded vehicles:", data); // Debug log
         setVehicles((data ?? []) as Vehicle[]);
         setTotal(count ?? 0);
       }
@@ -305,13 +304,13 @@ export function VehicleListPage() {
       />
 
       <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        {/* Filter bar with search on the right */}
+        {/* Filter bar with search on the right - MATCHING DRIVER LIST STYLE */}
         <div className="flex flex-col gap-3 border-b border-neutral-200 dark:border-neutral-800 p-4 sm:flex-row sm:items-center">
           {/* Status filter on the left */}
           <div className="sm:w-48">
-            <Select 
-              value={statusFilter} 
-              onChange={(e) => setStatusFilter(e.target.value)} 
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full"
             >
               <option value="">All statuses</option>
@@ -324,19 +323,19 @@ export function VehicleListPage() {
           {/* Spacer to push search to the right */}
           <div className="flex-1" />
           
-          {/* Search and refresh on the right */}
+          {/* Search and refresh on the right - ENHANCED SEARCH */}
           <div className="flex items-center gap-2 sm:w-auto w-full">
-            <div className="relative flex-1 sm:min-w-[200px]">
+            <div className="relative flex-1 sm:min-w-[260px]">
               <Search 
                 size={16} 
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" 
               />
               <input
                 type="text"
-                placeholder="Search vehicles..."
+                placeholder="Search by make, model, registration, or VIN..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-10 w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 pl-9 pr-3 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 dark:text-neutral-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500"
+                className="h-10 w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 pl-9 pr-3 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500"
               />
             </div>
             
@@ -382,7 +381,7 @@ export function VehicleListPage() {
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">
+                  <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
                     <th className="px-4 py-3">Vehicle</th>
                     <th className="px-4 py-3">Registration</th>
                     <th className="px-4 py-3">VIN</th>

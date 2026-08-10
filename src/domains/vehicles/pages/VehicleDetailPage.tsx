@@ -21,7 +21,6 @@ import {
   Image,
   FileArchive,
   FileCheck,
-  Truck,
   IdCard,
   ClipboardCheck,
   Wrench,
@@ -93,68 +92,139 @@ export function VehicleDetailPage() {
   const canDelete = can(permissions, "vehicles", "delete");
 
   useEffect(() => {
-    if (!id) return;
-    loadVehicleData();
+    if (id) {
+      loadVehicleData();
+    } else {
+      setError("No vehicle ID provided");
+      setLoading(false);
+    }
   }, [id]);
 
   async function loadVehicleData() {
-    if (!id) return;
+    if (!id) {
+      setError("No vehicle ID provided");
+      setLoading(false);
+      return;
+    }
+
+    console.log("📡 Loading vehicle with ID:", id);
     setLoading(true);
     setError(null);
 
     try {
-      // Load vehicle with assigned driver
+      // Step 1: Get the vehicle data
       const { data: vehicleData, error: vehicleError } = await supabase
         .from("vehicles")
-        .select(`
-          *,
-          assigned_driver:assigned_driver_id (
-            id,
-            full_name,
-            email,
-            phone,
-            status
-          )
-        `)
+        .select("*")
         .eq("id", id)
-        .maybeSingle();
+        .single();
+
+      console.log("📦 Vehicle data:", vehicleData);
+      console.log("❌ Vehicle error:", vehicleError);
 
       if (vehicleError) {
         console.error("Error loading vehicle:", vehicleError);
-        setError(`Failed to load vehicle: ${vehicleError.message}`);
+        
+        if (vehicleError.code === "PGRST116") {
+          setError("Vehicle not found. Please check the ID.");
+        } else {
+          setError(`Failed to load vehicle: ${vehicleError.message}`);
+        }
+        
         setLoading(false);
         return;
       }
 
-      if (vehicleData) {
-        setVehicle(vehicleData as Vehicle);
-        setForm(vehicleData as Vehicle);
-      } else {
+      if (!vehicleData) {
         setError("Vehicle not found");
         setLoading(false);
         return;
       }
 
-      // Load drivers list for dropdown
+      console.log("✅ Vehicle found:", vehicleData);
+
+      // Step 2: Get the assigned driver if exists
+      let assignedDriver = null;
+      if (vehicleData.assigned_driver_id) {
+        console.log("🔄 Fetching assigned driver:", vehicleData.assigned_driver_id);
+        const { data: driverData, error: driverError } = await supabase
+          .from("drivers")
+          .select("id, full_name, email, phone, status, assigned_vehicle_id")
+          .eq("id", vehicleData.assigned_driver_id)
+          .single();
+
+        console.log("👤 Driver data:", driverData);
+        console.log("❌ Driver error:", driverError);
+
+        if (driverData && !driverError) {
+          assignedDriver = driverData;
+        } else {
+          console.warn("⚠️ Assigned driver not found, clearing reference");
+          // Clean up the invalid reference
+          await supabase
+            .from("vehicles")
+            .update({ assigned_driver_id: null })
+            .eq("id", id);
+        }
+      }
+
+      // Step 3: Combine vehicle with driver data
+      const vehicleWithDriver = {
+        ...vehicleData,
+        assigned_driver: assignedDriver
+      };
+
+      console.log("🚗 Final vehicle with driver:", vehicleWithDriver);
+      setVehicle(vehicleWithDriver as Vehicle);
+      setForm(vehicleWithDriver as Vehicle);
+
+      // Step 4: Load drivers list and documents
+      await loadDrivers(vehicleWithDriver as Vehicle);
+      await loadDocuments();
+
+    } catch (err) {
+      console.error("💥 Unexpected error:", err);
+      setError(`An unexpected error occurred: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadDrivers(currentVehicle?: Vehicle) {
+    try {
+      const vehicleData = currentVehicle || vehicle;
+      
       const { data: driversData, error: driversError } = await supabase
         .from("drivers")
-        .select("id, full_name, status, email, phone")
+        .select("id, full_name, status, email, phone, assigned_vehicle_id")
         .order("full_name", { ascending: true });
 
       if (driversError) {
         console.error("Error loading drivers:", driversError);
-      } else {
-        setDrivers((driversData ?? []) as Driver[]);
+        setDrivers([]);
+        return;
       }
 
-      // Load documents
-      await loadDocuments();
-
+      // Get the current vehicle's assigned driver ID
+      const currentDriverId = vehicleData?.assigned_driver_id;
+      
+      console.log("📋 Current driver ID:", currentDriverId);
+      
+      // Filter drivers: show unassigned + currently assigned to this vehicle
+      const filteredDrivers = (driversData ?? []).filter((driver) => {
+        // If driver is assigned to this vehicle, show them
+        if (driver.id === currentDriverId) return true;
+        // If driver is not assigned to any vehicle, show them
+        if (!driver.assigned_vehicle_id) return true;
+        // Otherwise, hide them (they're assigned to another vehicle)
+        return false;
+      });
+      
+      console.log("📋 Filtered drivers:", filteredDrivers.length);
+      setDrivers(filteredDrivers as Driver[]);
     } catch (err) {
-      console.error("Unexpected error:", err);
-      setError("An unexpected error occurred");
-    } finally {
-      setLoading(false);
+      console.error("Error loading drivers:", err);
+      setDrivers([]);
     }
   }
 
@@ -200,7 +270,6 @@ export function VehicleDetailPage() {
     const file = e.target.files?.[0];
     if (!file || !id) return;
     
-    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       setError("File size must be less than 10MB");
       return;
@@ -209,7 +278,6 @@ export function VehicleDetailPage() {
     setUploading(true);
     setError(null);
     
-    // Initialize progress
     setUploadProgress({
       fileName: file.name,
       progress: 0,
@@ -217,14 +285,12 @@ export function VehicleDetailPage() {
     });
 
     try {
-      // Create a unique filename with category prefix
       const timestamp = Date.now();
       const ext = file.name.split('.').pop();
       const baseName = file.name.replace(/\.[^.]+$/, '');
       const fileName = `${selectedCategory}_${timestamp}_${baseName}.${ext}`;
       const filePath = `${id}/${fileName}`;
 
-      // Simulate progress for better UX
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => {
           if (!prev) return null;
@@ -246,10 +312,8 @@ export function VehicleDetailPage() {
         setUploadProgress(prev => prev ? { ...prev, status: 'error', error: uploadErr.message } : null);
         setError(`Upload failed: ${uploadErr.message}`);
       } else {
-        // Complete the progress
         setUploadProgress(prev => prev ? { ...prev, progress: 100, status: 'completed' } : null);
         
-        // Add document to list
         const newDoc: VehicleDocument = {
           name: fileName,
           path: filePath,
@@ -263,7 +327,6 @@ export function VehicleDetailPage() {
         await logAction("update", "vehicle", id, `Uploaded document ${fileName} (${selectedCategory})`);
         setSuccess(`Document "${file.name}" uploaded successfully as ${selectedCategory}`);
         
-        // Clear progress after delay
         setTimeout(() => {
           setUploadProgress(null);
         }, 2000);
@@ -274,7 +337,6 @@ export function VehicleDetailPage() {
       setError("Failed to upload document");
     } finally {
       setUploading(false);
-      // Reset file input
       e.target.value = '';
     }
   };
@@ -355,12 +417,14 @@ export function VehicleDetailPage() {
       const newDriverId = form.assigned_driver_id;
 
       if (oldDriverId !== newDriverId) {
+        // Clear old driver's vehicle assignment
         if (oldDriverId) {
           await supabase
             .from("drivers")
             .update({ assigned_vehicle_id: null })
             .eq("id", oldDriverId);
         }
+        // Set new driver's vehicle assignment
         if (newDriverId) {
           await supabase
             .from("drivers")
@@ -400,7 +464,7 @@ export function VehicleDetailPage() {
         await supabase
           .from("drivers")
           .update({ assigned_vehicle_id: null })
-          .eq("assigned_vehicle_id", id);
+          .eq("id", vehicle.assigned_driver_id);
       }
 
       const { error: delErr } = await supabase.from("vehicles").delete().eq("id", id);
@@ -417,7 +481,6 @@ export function VehicleDetailPage() {
     }
   };
 
-  // Get documents by category
   const getDocumentsByCategory = (category: string) => {
     return documents.filter(doc => doc.category === category);
   };
@@ -439,7 +502,13 @@ export function VehicleDetailPage() {
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
         <AlertCircle size={48} className="text-neutral-400 dark:text-neutral-500" />
         <p className="text-lg font-medium text-neutral-900 dark:text-neutral-100">Vehicle not found</p>
-        <Link to="/UI/vehicles" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          The vehicle you're looking for doesn't exist or has been removed.
+        </p>
+        <Link 
+          to="/UI/vehicles" 
+          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+        >
           Return to vehicles list
         </Link>
       </div>
@@ -448,7 +517,6 @@ export function VehicleDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Back button */}
       <Link 
         to="/UI/vehicles" 
         className="inline-flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
@@ -456,7 +524,6 @@ export function VehicleDetailPage() {
         <ArrowLeft size={16} /> Back to vehicles
       </Link>
 
-      {/* Success/Error messages */}
       {success && (
         <div className="rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4 text-sm text-green-800 dark:text-green-200 animate-in fade-in slide-in-from-top-2 duration-300">
           {success}
@@ -471,7 +538,6 @@ export function VehicleDetailPage() {
       <PageHeader
         title={`${vehicle.make} ${vehicle.model}`}
         description={
-          // FIX: Changed from <div> to <span> with flex
           <span className="flex items-center gap-3">
             {vehicle.registration_number && (
               <span className="text-neutral-500 dark:text-neutral-400">
@@ -505,7 +571,6 @@ export function VehicleDetailPage() {
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Main vehicle details */}
         <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 lg:col-span-2">
           {editing ? (
             <form onSubmit={handleSave} className="space-y-4">
@@ -577,10 +642,17 @@ export function VehicleDetailPage() {
                   <option value="">Unassigned</option>
                   {drivers.map((d) => (
                     <option key={d.id} value={d.id}>
-                      {d.full_name} {d.status !== "active" ? `(${d.status})` : ""}
+                      {d.full_name} 
+                      {d.status !== "active" ? ` (${d.status})` : ""}
+                      {d.assigned_vehicle_id && d.assigned_vehicle_id === id ? " (Current)" : ""}
                     </option>
                   ))}
                 </Select>
+                {drivers.length === 0 && (
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 col-span-2">
+                    No unassigned drivers available. All drivers are assigned to other vehicles.
+                  </p>
+                )}
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button 
@@ -601,54 +673,20 @@ export function VehicleDetailPage() {
             </form>
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              {/* Vehicle Details */}
               <div className="space-y-4">
                 <h4 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Vehicle Information</h4>
-                <Field 
-                  icon={<Car size={14} />}
-                  label="Make" 
-                  value={vehicle.make} 
-                />
-                <Field 
-                  icon={<Car size={14} />}
-                  label="Model" 
-                  value={vehicle.model} 
-                />
-                <Field 
-                  icon={<Calendar size={14} />}
-                  label="Year" 
-                  value={vehicle.year?.toString()} 
-                />
-                <Field 
-                  icon={<Hash size={14} />}
-                  label="VIN" 
-                  value={vehicle.vin} 
-                />
-                <Field 
-                  icon={<Hash size={14} />}
-                  label="Registration Number" 
-                  value={vehicle.registration_number} 
-                />
-                <Field 
-                  icon={<Building size={14} />}
-                  label="Department" 
-                  value={vehicle.department} 
-                />
+                <Field icon={<Car size={14} />} label="Make" value={vehicle.make} />
+                <Field icon={<Car size={14} />} label="Model" value={vehicle.model} />
+                <Field icon={<Calendar size={14} />} label="Year" value={vehicle.year?.toString()} />
+                <Field icon={<Hash size={14} />} label="VIN" value={vehicle.vin} />
+                <Field icon={<Hash size={14} />} label="Registration Number" value={vehicle.registration_number} />
+                <Field icon={<Building size={14} />} label="Department" value={vehicle.department} />
               </div>
 
-              {/* Insurance & Assignment */}
               <div className="space-y-4">
                 <h4 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Insurance & Assignment</h4>
-                <Field 
-                  icon={<Shield size={14} />}
-                  label="Insurance Provider" 
-                  value={vehicle.insurance_provider} 
-                />
-                <Field 
-                  icon={<BadgeCheck size={14} />}
-                  label="Insurance Policy" 
-                  value={vehicle.insurance_policy_number} 
-                />
+                <Field icon={<Shield size={14} />} label="Insurance Provider" value={vehicle.insurance_provider} />
+                <Field icon={<BadgeCheck size={14} />} label="Insurance Policy" value={vehicle.insurance_policy_number} />
                 <div>
                   <dt className="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
                     <Calendar size={14} />
@@ -719,7 +757,6 @@ export function VehicleDetailPage() {
           )}
         </div>
 
-        {/* Documents section with categories */}
         <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Documents</h3>
@@ -729,7 +766,6 @@ export function VehicleDetailPage() {
             Upload and manage vehicle documents
           </p>
           
-          {/* Upload section */}
           {canUpdate && (
             <div className="mt-3 space-y-2">
               <Select
@@ -755,7 +791,6 @@ export function VehicleDetailPage() {
                 />
               </label>
 
-              {/* Upload Progress Bar */}
               {uploadProgress && (
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center justify-between text-xs">
@@ -767,7 +802,6 @@ export function VehicleDetailPage() {
                     </span>
                   </div>
                   
-                  {/* Progress bar */}
                   <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
                     <div 
                       className={`h-full rounded-full transition-all duration-300 ease-out ${
@@ -781,7 +815,6 @@ export function VehicleDetailPage() {
                     />
                   </div>
                   
-                  {/* Status message */}
                   {uploadProgress.status === 'uploading' && (
                     <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
                       <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
@@ -807,7 +840,6 @@ export function VehicleDetailPage() {
             </div>
           )}
           
-          {/* Document categories */}
           <div className="mt-4 space-y-4 max-h-[400px] overflow-y-auto">
             {DOCUMENT_CATEGORIES.map((category) => {
               const docs = getDocumentsByCategory(category.value);
