@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/shared/store/authStore";
 import { Button } from "@/shared/ui/Button";
 import { Input } from "@/shared/ui/Input";
-import { Truck } from "lucide-react";
+
 
 export function LoginPage() {
   const { signIn, loading, error } = useAuthStore();
@@ -30,11 +30,6 @@ export function LoginPage() {
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-neutral-50 dark:bg-neutral-800 px-4 dark:bg-neutral-950">
       <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-neutral-900 text-white dark:bg-white dark:bg-neutral-900 dark:text-neutral-900 dark:text-neutral-100">
-            <Truck size={24} />
-          </div>
-        </div>
         <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
